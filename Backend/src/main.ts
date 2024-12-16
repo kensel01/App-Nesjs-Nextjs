@@ -16,7 +16,6 @@ async function bootstrap() {
     }),
   );
 
-  // Falto agregar CORS
   app.enableCors();
 
   const config = new DocumentBuilder()
