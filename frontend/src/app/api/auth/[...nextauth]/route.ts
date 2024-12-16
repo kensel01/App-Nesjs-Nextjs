@@ -9,14 +9,25 @@ const handler = NextAuth({
                 password: { label: "Password", type: "password" },
             },
             async authorize(credentials, req) {
-                const user = { id: "1", name: "J Smith", email: "jsmith@example.com" }
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`,
+                    {
+                        method: "POST",
+                        body: JSON.stringify({
+                            email: credentials?.email,
+                            password: credentials?.password,
+                        }),
+                        headers: { "Content-Type": "application/json" },
+                    }	
+                );
+                const user = await res.json();
+                console.log(user);
 
-                if (user) {
-                    return user;
-                } else {
-                    return null;
-                }
-            }
+                if (user.error) throw user;
+
+                return user;
+                
+            },
         })
     ]
         
