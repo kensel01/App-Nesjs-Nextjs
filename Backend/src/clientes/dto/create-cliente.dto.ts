@@ -1,6 +1,6 @@
 import { IsInt, IsOptional, IsPositive, IsString, MinLength } from "class-validator";
 
-export class CreateCatDto {
+export class CreateClienteDto {
     @IsString()
     @MinLength(1)
     name: string;
@@ -11,6 +11,5 @@ export class CreateCatDto {
 
     @IsString()
     @IsOptional()
-    breed?: string;
-
-}
+    tipoDeServicio?: string;
+} 

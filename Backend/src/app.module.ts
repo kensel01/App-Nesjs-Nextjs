@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { CatsModule } from './cats/cats.module';
+import { ClientesModule } from './clientes/clientes.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { BreedsModule } from './breeds/breeds.module';
+import { TiposDeServicioModule } from './tipos-de-servicio/tipos-de-servicio.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
@@ -29,8 +29,8 @@ import { ConfigModule } from '@nestjs/config';
           : null,
       },
     }),
-    CatsModule,
-    BreedsModule, 
+    ClientesModule,
+    TiposDeServicioModule, 
     UsersModule,
     AuthModule,
   ],

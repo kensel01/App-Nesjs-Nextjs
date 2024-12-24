@@ -19,8 +19,8 @@ async function bootstrap() {
   app.enableCors();
 
   const config = new DocumentBuilder()
-    .setTitle('Cats example')
-    .setDescription('The cats API description')
+    .setTitle('Clientes example')
+    .setDescription('The clientes API description')
     .setVersion('1.0')
     .addBearerAuth()
     .build();

@@ -1,11 +1,11 @@
-import { Breed } from "../../breeds/entities/breed.entity";
+import { TipoDeServicio } from "src/tipos-de-servicio/entities/tipo-de-servicio.entity";
 import { User } from "../../users/entities/user.entity";
 import { Column, DeleteDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+
 @Entity()
-export class Cat {
+export class Cliente {
     
-    //@PrimaryGeneratedColumn()
-    @Column({primary:true, generated: true})
+    @PrimaryGeneratedColumn()
     id: number;
 
     @Column()
@@ -14,15 +14,13 @@ export class Cat {
     @Column()
     age: number;
 
-    
-
     @DeleteDateColumn()
     deletedAt: Date;
 
-    @ManyToOne(()=>Breed, (breed)=>breed.id, {
+    @ManyToOne(()=>TipoDeServicio, (tipoDeServicio)=>tipoDeServicio.id, {
         eager: true,
     })
-    breed: Breed;
+    tipoDeServicio: TipoDeServicio;
 
     @ManyToOne(() => User)
     @JoinColumn({ name: 'userEmail', referencedColumnName: 'email',  })
@@ -30,4 +28,4 @@ export class Cat {
   
     @Column()
     userEmail: string;
-}
+} 
