@@ -7,7 +7,7 @@ import { UserActiveInterface } from 'src/common/interfaces/user-active.interface
 import { CreateClienteDto } from './dto/create-cliente.dto';
 import { UpdateClienteDto } from './dto/update-cliente.dto';
 
-@Auth(Role.USER)
+@Auth(Role.ADMIN, Role.TECNICO)
 @Controller('clientes')
 export class ClientesController {
   constructor(private readonly clientesService: ClientesService) {}
