@@ -1,12 +1,5 @@
-import ButtonAuth from "../../components/ButtonAuth";
+import { redirect } from 'next/navigation';
 
-const HomePage = () => {
-  return (
-    <div>
-      <h1>Hello World</h1>
-      <ButtonAuth />
-    </div>
-  );
-};
-
-export default HomePage;
+export default function HomePage() {
+  redirect('/dashboard');
+}
