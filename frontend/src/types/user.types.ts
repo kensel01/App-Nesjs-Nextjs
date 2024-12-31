@@ -1,18 +1,27 @@
 export enum Role {
-  ADMIN = 'admin',
-  USER = 'user',
-  TECNICO = 'tecnico'
+  ADMIN = 'ADMIN',
+  USER = 'USER',
+  TECHNICIAN = 'TECHNICIAN'
 }
 
-export interface CreateUserForm {
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: Role;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface CreateUserDto {
   name: string;
   email: string;
   password: string;
   role: Role;
 }
 
-export interface User extends Omit<CreateUserForm, 'password'> {
-  id: number;
-  createdAt: string;
-  updatedAt: string;
+export interface UpdateUserDto {
+  name?: string;
+  email?: string;
+  role?: Role;
 } 

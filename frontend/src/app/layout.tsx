@@ -1,11 +1,9 @@
-import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
-import Providers from '@/src/providers/Providers';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-export const metadata: Metadata = {
-  title: 'App Nest Next',
-  description: 'Aplicación con Next.js y Nest.js',
-};
+const inter = Inter({ subsets: ['latin'] });
 
 export default function RootLayout({
   children,
@@ -14,10 +12,20 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className="min-h-screen bg-gray-50">
-        <Providers>
-          {children}
-        </Providers>
+      <body className={inter.className}>
+        {children}
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
       </body>
     </html>
   );

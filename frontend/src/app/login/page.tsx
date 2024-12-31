@@ -2,21 +2,20 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { authService } from '@/src/services/auth.service';
+import { useAuth } from '@/src/hooks/useAuth';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { login, error: authError } = useAuth();
   const router = useRouter();
 
   const handleLogin = async () => {
     try {
       setIsLoading(true);
-      setError(null);
-      await authService.login('test@test.com', '123123');
+      await login('test@test.com', '123123');
       router.push('/dashboard');
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Error al iniciar sesión');
+      // El error ya está manejado por el hook
     } finally {
       setIsLoading(false);
     }
@@ -30,7 +29,7 @@ export default function LoginPage() {
             Iniciar Sesión
           </h2>
         </div>
-        {error && (
+        {authError && (
           <div className="rounded-md bg-red-50 p-4">
             <div className="flex">
               <div className="ml-3">
@@ -38,7 +37,7 @@ export default function LoginPage() {
                   Error al iniciar sesión
                 </h3>
                 <div className="mt-2 text-sm text-red-700">
-                  <p>{error}</p>
+                  <p>{authError}</p>
                 </div>
               </div>
             </div>
