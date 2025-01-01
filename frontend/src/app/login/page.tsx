@@ -1,12 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuth } from "@/hooks/useAuth";
-import { LoginFormData, loginSchema } from "@/schemas/auth";
-import { Button } from "@/components/ui/button";
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -14,70 +21,46 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+} from '@/components/ui/form';
+
+const loginSchema = z.object({
+  email: z.string().email('Ingresa un correo electrónico válido'),
+  password: z.string().min(1, 'La contraseña es requerida'),
+});
+
+type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
-  const router = useRouter();
+  const { login, isAuthenticated, isLoading } = useAuth();
 
-  console.log('LoginPage Estado:', {
-    isLoading,
-    isAuthenticated,
-    authLoading
-  });
-
-  useEffect(() => {
-    console.log('LoginPage useEffect:', {
-      isAuthenticated,
-      authLoading
-    });
-
-    if (isAuthenticated && !authLoading) {
-      console.log('Condición de redirección cumplida en LoginPage');
-      setTimeout(() => {
-        console.log('Intentando redirección desde LoginPage...');
-        router.push('/dashboard');
-      }, 100);
-    }
-  }, [isAuthenticated, authLoading, router]);
-
-  const form = useForm<LoginFormData>({
+  const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
-      password: "",
+      email: '',
+      password: '',
     },
   });
 
-  const onSubmit = async (data: LoginFormData) => {
-    try {
-      console.log('Iniciando submit del formulario...');
-      setIsLoading(true);
-      const success = await login(data);
-      console.log('Resultado del login:', success);
-      
-      if (success) {
-        console.log('Login exitoso, preparando redirección desde onSubmit...');
-        setTimeout(() => {
-          console.log('Ejecutando redirección desde onSubmit...');
-          router.push('/dashboard');
-        }, 100);
-      }
-    } catch (error) {
-      console.error("Error en login:", error);
-    } finally {
-      setIsLoading(false);
-    }
+  const onSubmit = async (data: LoginForm) => {
+    await login(data);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="flex items-center justify-center min-h-screen p-4">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-center">Iniciar Sesión</CardTitle>
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl text-center">Iniciar Sesión</CardTitle>
+          <CardDescription className="text-center">
+            Ingresa tus credenciales para acceder al sistema
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -91,7 +74,7 @@ export default function LoginPage() {
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="tu@email.com"
+                        placeholder="usuario@ejemplo.com"
                         {...field}
                       />
                     </FormControl>
@@ -119,9 +102,9 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isLoading}
+                disabled={form.formState.isSubmitting}
               >
-                {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
+                {form.formState.isSubmitting ? 'Iniciando sesión...' : 'Iniciar Sesión'}
               </Button>
             </form>
           </Form>

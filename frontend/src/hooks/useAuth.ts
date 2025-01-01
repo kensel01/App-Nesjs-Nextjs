@@ -1,52 +1,40 @@
+'use client';
+
 import { signIn, signOut, useSession } from 'next-auth/react';
-import { LoginFormData } from "@/schemas/auth";
-import { toast } from "react-toastify";
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
 
-export function useAuth() {
-  const { data: session, status } = useSession();
+interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export const useAuth = () => {
   const router = useRouter();
+  const { data: session, status } = useSession();
 
-  const isAuthenticated = status === 'authenticated';
-  const isLoading = status === 'loading';
-
-  console.log('useAuth Hook Estado:', {
-    status,
-    isAuthenticated,
-    isLoading,
-    sessionData: session
-  });
-
-  const login = async (credentials: LoginFormData) => {
+  const login = async (credentials: LoginCredentials) => {
     try {
-      console.log('Iniciando proceso de login...');
       const result = await signIn('credentials', {
         ...credentials,
         redirect: false,
       });
 
-      console.log('Resultado de signIn:', result);
-
       if (result?.error) {
-        console.log('Error en signIn:', result.error);
         toast.error(result.error);
         return false;
       }
 
       if (result?.ok) {
-        console.log('Login exitoso, intentando redirección...');
-        toast.success("Inicio de sesión exitoso");
-        setTimeout(() => {
-          console.log('Ejecutando redirección al dashboard...');
-          router.push('/dashboard');
-        }, 100);
+        toast.success('Inicio de sesión exitoso');
+        router.push('/dashboard');
         return true;
       }
 
       return false;
     } catch (error) {
       console.error('Error en login:', error);
-      toast.error("Error al iniciar sesión");
+      toast.error('Error al iniciar sesión');
       return false;
     }
   };
@@ -54,19 +42,20 @@ export function useAuth() {
   const logout = async () => {
     try {
       await signOut({ redirect: false });
-      toast.success("Sesión cerrada");
+      toast.success('Sesión cerrada correctamente');
       router.push('/login');
     } catch (error) {
-      console.error('Error en logout:', error);
-      toast.error("Error al cerrar sesión");
+      console.error('Error al cerrar sesión:', error);
+      toast.error('Error al cerrar sesión');
     }
   };
 
   return {
-    session,
-    isAuthenticated,
-    isLoading,
     login,
     logout,
+    session,
+    status,
+    isAuthenticated: status === 'authenticated',
+    isLoading: status === 'loading',
   };
-} 
+}; 
