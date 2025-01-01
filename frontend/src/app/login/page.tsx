@@ -1,21 +1,73 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/src/hooks/useAuth';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useAuth } from "@/hooks/useAuth";
+import { LoginFormData, loginSchema } from "@/schemas/auth";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const { login, error: authError } = useAuth();
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
-  const handleLogin = async () => {
+  console.log('LoginPage Estado:', {
+    isLoading,
+    isAuthenticated,
+    authLoading
+  });
+
+  useEffect(() => {
+    console.log('LoginPage useEffect:', {
+      isAuthenticated,
+      authLoading
+    });
+
+    if (isAuthenticated && !authLoading) {
+      console.log('Condición de redirección cumplida en LoginPage');
+      setTimeout(() => {
+        console.log('Intentando redirección desde LoginPage...');
+        router.push('/dashboard');
+      }, 100);
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  const form = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const onSubmit = async (data: LoginFormData) => {
     try {
+      console.log('Iniciando submit del formulario...');
       setIsLoading(true);
-      await login('test@test.com', '123123');
-      router.push('/dashboard');
+      const success = await login(data);
+      console.log('Resultado del login:', success);
+      
+      if (success) {
+        console.log('Login exitoso, preparando redirección desde onSubmit...');
+        setTimeout(() => {
+          console.log('Ejecutando redirección desde onSubmit...');
+          router.push('/dashboard');
+        }, 100);
+      }
     } catch (error) {
-      // El error ya está manejado por el hook
+      console.error("Error en login:", error);
     } finally {
       setIsLoading(false);
     }
@@ -23,73 +75,58 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Iniciar Sesión
-          </h2>
-        </div>
-        {authError && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="flex">
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">
-                  Error al iniciar sesión
-                </h3>
-                <div className="mt-2 text-sm text-red-700">
-                  <p>{authError}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        <div className="mt-8 space-y-6">
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email
-              </label>
-              <input
-                id="email-address"
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-center">Iniciar Sesión</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
                 name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email"
-                value="test@test.com"
-                disabled
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="tu@email.com"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Contraseña
-              </label>
-              <input
-                id="password"
+              <FormField
+                control={form.control}
                 name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Contraseña"
-                value="123123"
-                disabled
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contraseña</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-          </div>
-
-          <div>
-            <button
-              onClick={handleLogin}
-              disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-            >
-              {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-            </button>
-          </div>
-        </div>
-      </div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

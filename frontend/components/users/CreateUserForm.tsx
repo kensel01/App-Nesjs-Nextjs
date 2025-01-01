@@ -4,11 +4,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
-import { Role } from '@/types/user.types';
-import { createUserSchema } from '@/schemas/user.schema';
-import { authService } from '@/services/auth.service';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Role } from '../../src/types/user.types';
+import { createUserSchema } from '../../src/schemas/user.schema';
+import { authService } from '../../src/services/auth.service';
+import { Button } from '../../src/components/ui/button';
+import { Input } from '../../src/components/ui/input';
 import {
   Form,
   FormControl,
@@ -16,14 +16,14 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from '../../src/components/ui/form';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '../../src/components/ui/select';
 import type { z } from 'zod';
 
 type FormData = z.infer<typeof createUserSchema>;

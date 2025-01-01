@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Role } from '@/types/user.types';
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -11,29 +11,35 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../ui/table';
+} from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Pencil, Trash } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 interface UsersTableProps {
   users: User[];
+  total: number;
+  page: number;
+  limit: number;
+  onPageChange: (page: number) => void;
   onDelete: (id: number) => Promise<void>;
+  onEdit: (user: User) => void;
+  onSort: (field: keyof User) => void;
+  sortBy: keyof User;
+  sortOrder: 'ASC' | 'DESC';
+  onSearch: (query: string) => void;
+  isLoading: boolean;
 }
 
-export default function UsersTable({ users, onDelete }: UsersTableProps) {
+export default function UsersTable({ users, total, page, limit, onPageChange, onDelete, onEdit, onSort, sortBy, sortOrder, onSearch, isLoading }: UsersTableProps) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-
-  const handleEdit = (id: number) => {
-    router.push(`/dashboard/users/edit/${id}`);
-  };
 
   const handleDelete = async (id: number) => {
     try {
@@ -90,7 +96,7 @@ export default function UsersTable({ users, onDelete }: UsersTableProps) {
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                   <DropdownMenuItem
-                    onClick={() => handleEdit(user.id)}
+                    onClick={() => onEdit(user)}
                     disabled={loading}
                   >
                     <Pencil className="mr-2 h-4 w-4" />

@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import UsersTable from '@/components/users/UsersTable';
-import { usersService } from '@/src/services/users.service';
-import { User } from '@/src/types/user.types';
+import { usersService } from '@/services/users.service';
+import { User } from '@/types/user.types';
 import { PlusIcon } from '@heroicons/react/24/outline';
 
 export default function UsersPage() {

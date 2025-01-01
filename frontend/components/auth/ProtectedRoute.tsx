@@ -10,17 +10,21 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!isLoading && !isAuthenticated) {
       router.push('/login');
     }
-  }, [loading, user, router]);
+  }, [isLoading, isAuthenticated, router]);
 
-  if (loading) {
-    return <div>Cargando...</div>;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-lg">Cargando...</p>
+      </div>
+    );
   }
 
-  return user ? <>{children}</> : null;
+  return isAuthenticated ? <>{children}</> : null;
 } 

@@ -1,61 +1,72 @@
-import { useState, useEffect } from 'react';
-import { authService } from '@/services/auth.service';
-import { User } from '@/types/user.types';
+import { signIn, signOut, useSession } from 'next-auth/react';
+import { LoginFormData } from "@/schemas/auth";
+import { toast } from "react-toastify";
+import { useRouter } from 'next/navigation';
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await authService.getProfile();
-        setUser(userData);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error al cargar el usuario');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const isAuthenticated = status === 'authenticated';
+  const isLoading = status === 'loading';
 
-    loadUser();
-  }, []);
+  console.log('useAuth Hook Estado:', {
+    status,
+    isAuthenticated,
+    isLoading,
+    sessionData: session
+  });
 
-  const login = async (email: string, password: string) => {
+  const login = async (credentials: LoginFormData) => {
     try {
-      setLoading(true);
-      const response = await authService.login(email, password);
-      const userData = await authService.getProfile();
-      setUser(userData);
-      return response;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
-      throw err;
-    } finally {
-      setLoading(false);
+      console.log('Iniciando proceso de login...');
+      const result = await signIn('credentials', {
+        ...credentials,
+        redirect: false,
+      });
+
+      console.log('Resultado de signIn:', result);
+
+      if (result?.error) {
+        console.log('Error en signIn:', result.error);
+        toast.error(result.error);
+        return false;
+      }
+
+      if (result?.ok) {
+        console.log('Login exitoso, intentando redirección...');
+        toast.success("Inicio de sesión exitoso");
+        setTimeout(() => {
+          console.log('Ejecutando redirección al dashboard...');
+          router.push('/dashboard');
+        }, 100);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Error en login:', error);
+      toast.error("Error al iniciar sesión");
+      return false;
     }
   };
 
   const logout = async () => {
     try {
-      setLoading(true);
-      setUser(null);
-      // Aquí podrías agregar la lógica para limpiar tokens o hacer logout en el backend
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cerrar sesión');
-      throw err;
-    } finally {
-      setLoading(false);
+      await signOut({ redirect: false });
+      toast.success("Sesión cerrada");
+      router.push('/login');
+    } catch (error) {
+      console.error('Error en logout:', error);
+      toast.error("Error al cerrar sesión");
     }
   };
 
   return {
-    user,
-    loading,
-    error,
+    session,
+    isAuthenticated,
+    isLoading,
     login,
     logout,
-    isAuthenticated: !!user,
   };
 } 

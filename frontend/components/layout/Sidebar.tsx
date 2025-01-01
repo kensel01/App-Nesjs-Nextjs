@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { UserPlusIcon, UsersIcon } from '@heroicons/react/24/outline';
-import { useSidebar } from '@/src/providers/SidebarProvider';
+import { useSidebar } from '@/hooks/useSidebar';
 import clsx from 'clsx';
 
 const menuItems = [
