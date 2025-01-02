@@ -1,74 +1,168 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { UserPlusIcon, UsersIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 import { useSidebar } from '@/hooks/useSidebar';
 import clsx from 'clsx';
+import { FaUsers, FaUserPlus, FaUsersCog, FaTools } from 'react-icons/fa';
+import { MdPeople, MdPersonAdd, MdPeopleOutline, MdDashboard, MdSettings } from 'react-icons/md';
 
-const menuItems = [
+interface MenuItem {
+  title: string;
+  path?: string;
+  icon: JSX.Element;
+  submenu?: boolean;
+  submenuItems?: {
+    title: string;
+    path: string;
+    icon: JSX.Element;
+  }[];
+}
+
+const menuItems: MenuItem[] = [
   {
-    name: 'Crear Usuario',
-    icon: UserPlusIcon,
-    href: '/dashboard/users/create',
+    title: 'Dashboard',
+    path: '/dashboard',
+    icon: <MdDashboard className="w-6 h-6" />,
   },
   {
-    name: 'Lista de Clientes',
-    icon: UsersIcon,
-    href: '/dashboard/clients',
+    title: 'Usuarios',
+    icon: <FaUsers className="w-6 h-6" />,
+    submenu: true,
+    submenuItems: [
+      {
+        title: 'Lista de Usuarios',
+        path: '/dashboard/users',
+        icon: <FaUsersCog className="w-5 h-5" />,
+      },
+      {
+        title: 'Crear Usuario',
+        path: '/dashboard/users/create',
+        icon: <FaUserPlus className="w-5 h-5" />,
+      },
+    ],
+  },
+  {
+    title: 'Clientes',
+    icon: <MdPeople className="w-6 h-6" />,
+    submenu: true,
+    submenuItems: [
+      {
+        title: 'Lista de Clientes',
+        path: '/dashboard/clientes',
+        icon: <MdPeopleOutline className="w-5 h-5" />,
+      },
+      {
+        title: 'Crear Cliente',
+        path: '/dashboard/clientes/create',
+        icon: <MdPersonAdd className="w-5 h-5" />,
+      },
+    ],
+  },
+  {
+    title: 'Tipos de Servicio',
+    icon: <FaTools className="w-6 h-6" />,
+    submenu: true,
+    submenuItems: [
+      {
+        title: 'Lista de Tipos',
+        path: '/dashboard/tipos-de-servicio',
+        icon: <MdSettings className="w-5 h-5" />,
+      },
+      {
+        title: 'Crear Tipo',
+        path: '/dashboard/tipos-de-servicio/create',
+        icon: <FaTools className="w-5 h-5" />,
+      },
+    ],
   },
 ];
 
 export default function Sidebar() {
-  const { isExpanded, expandSidebar, collapseSidebar } = useSidebar();
   const pathname = usePathname();
+  const { isOpen, toggleSubmenu, openSubmenuIndex, toggleSidebar } = useSidebar();
 
   return (
-    <motion.aside
+    <div
       className={clsx(
-        'fixed left-0 top-0 z-40 h-screen bg-gray-800 transition-all duration-300',
-        isExpanded ? 'w-60' : 'w-16'
+        'fixed left-0 top-0 h-screen bg-gray-900 text-white transition-all duration-300 ease-in-out z-50',
+        isOpen ? 'w-64' : 'w-20'
       )}
-      onMouseEnter={expandSidebar}
-      onMouseLeave={collapseSidebar}
-      initial={false}
-      animate={{ width: isExpanded ? 240 : 64 }}
-      transition={{ duration: 0.3 }}
+      onMouseEnter={() => !isOpen && toggleSidebar()}
+      onMouseLeave={() => isOpen && toggleSidebar()}
     >
-      <div className="flex h-full flex-col px-3 py-4">
-        <div className="mb-10 flex items-center justify-center">
-          {/* Logo aquí */}
+      <div className="flex h-full flex-col">
+        <div className="flex-1 overflow-y-auto">
+          <nav className="mt-5 px-2">
+            <div className="space-y-1">
+              {menuItems.map((item, index) => (
+                <div key={item.title}>
+                  {item.submenu ? (
+                    <>
+                      <button
+                        onClick={() => toggleSubmenu(index)}
+                        className={clsx(
+                          'group flex w-full items-center rounded-md px-2 py-2 text-sm font-medium hover:bg-gray-800',
+                          openSubmenuIndex === index ? 'bg-gray-800' : ''
+                        )}
+                      >
+                        {item.icon}
+                        <span
+                          className={clsx(
+                            'ml-3 flex-1 whitespace-nowrap',
+                            !isOpen && 'hidden'
+                          )}
+                        >
+                          {item.title}
+                        </span>
+                      </button>
+                      {openSubmenuIndex === index && isOpen && (
+                        <div className="space-y-1 pl-8">
+                          {item.submenuItems?.map((subItem) => (
+                            <Link
+                              key={subItem.title}
+                              href={subItem.path}
+                              className={clsx(
+                                'group flex items-center rounded-md px-2 py-2 text-sm font-medium hover:bg-gray-800',
+                                pathname === subItem.path
+                                  ? 'bg-gray-800 text-white'
+                                  : 'text-gray-300'
+                              )}
+                            >
+                              {subItem.icon}
+                              <span className="ml-3">{subItem.title}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <Link
+                      href={item.path || '#'}
+                      className={clsx(
+                        'group flex items-center rounded-md px-2 py-2 text-sm font-medium hover:bg-gray-800',
+                        pathname === item.path
+                          ? 'bg-gray-800 text-white'
+                          : 'text-gray-300'
+                      )}
+                    >
+                      {item.icon}
+                      <span
+                        className={clsx(
+                          'ml-3 flex-1 whitespace-nowrap',
+                          !isOpen && 'hidden'
+                        )}
+                      >
+                        {item.title}
+                      </span>
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </div>
+          </nav>
         </div>
-
-        <nav className="flex-1 space-y-2">
-          {menuItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={clsx(
-                  'flex items-center rounded-lg p-2 text-white transition-colors',
-                  isActive
-                    ? 'bg-blue-600 hover:bg-blue-700'
-                    : 'hover:bg-gray-700'
-                )}
-              >
-                <item.icon className="h-6 w-6 shrink-0" />
-                <motion.span
-                  className="ml-3 whitespace-nowrap"
-                  initial={false}
-                  animate={{ opacity: isExpanded ? 1 : 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {item.name}
-                </motion.span>
-              </Link>
-            );
-          })}
-        </nav>
       </div>
-    </motion.aside>
+    </div>
   );
 } 

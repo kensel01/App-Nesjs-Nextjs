@@ -1,10 +1,20 @@
-import { useState } from 'react';
+import { create } from 'zustand';
 
-export const useSidebar = () => {
-  const [isExpanded, setIsExpanded] = useState(false);
+interface SidebarState {
+  isOpen: boolean;
+  openSubmenuIndex: number | null;
+  setIsOpen: (isOpen: boolean) => void;
+  toggleSidebar: () => void;
+  toggleSubmenu: (index: number) => void;
+}
 
-  const expandSidebar = () => setIsExpanded(true);
-  const collapseSidebar = () => setIsExpanded(false);
-
-  return { isExpanded, expandSidebar, collapseSidebar };
-}; 
+export const useSidebar = create<SidebarState>()((set) => ({
+  isOpen: true,
+  openSubmenuIndex: null,
+  setIsOpen: (isOpen: boolean) => set({ isOpen }),
+  toggleSidebar: () => set((state) => ({ isOpen: !state.isOpen })),
+  toggleSubmenu: (index: number) =>
+    set((state) => ({
+      openSubmenuIndex: state.openSubmenuIndex === index ? null : index,
+    })),
+})); 

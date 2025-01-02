@@ -4,22 +4,22 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import UsersTable from '@/components/users/UsersTable';
-import { usersService } from '@/services/users.service';
-import { User } from '@/types/user.types';
+import TiposDeServicioTable from '@/components/tipos-de-servicio/TiposDeServicioTable';
+import { tiposDeServicioService } from '@/services/tipos-de-servicio.service';
+import { TipoDeServicio } from '@/types/cliente.types';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
 
-export default function UsersPage() {
+export default function TiposDeServicioPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [users, setUsers] = useState<User[]>([]);
+  const [tiposDeServicio, setTiposDeServicio] = useState<TipoDeServicio[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<keyof User>('name');
+  const [sortBy, setSortBy] = useState<keyof TipoDeServicio>('name');
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('ASC');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -29,20 +29,20 @@ export default function UsersPage() {
     }
   }, [status, router]);
 
-  const loadUsers = async () => {
+  const loadTiposDeServicio = async () => {
     try {
       setIsLoading(true);
-      const response = await usersService.getUsers({
+      const response = await tiposDeServicioService.getTiposDeServicio({
         page,
         limit,
         search: searchQuery,
         sortBy,
         sortOrder,
       });
-      setUsers(response.users);
+      setTiposDeServicio(response.tiposDeServicio);
       setTotal(response.total);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Error al cargar usuarios');
+      setError(error instanceof Error ? error.message : 'Error al cargar tipos de servicio');
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +50,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      loadUsers();
+      loadTiposDeServicio();
     }
   }, [page, sortBy, sortOrder, searchQuery, status]);
 
@@ -58,7 +58,7 @@ export default function UsersPage() {
     setPage(newPage);
   };
 
-  const handleSort = (field: keyof User) => {
+  const handleSort = (field: keyof TipoDeServicio) => {
     if (field === sortBy) {
       setSortOrder(sortOrder === 'ASC' ? 'DESC' : 'ASC');
     } else {
@@ -73,20 +73,20 @@ export default function UsersPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
+    if (!confirm('¿Estás seguro de que deseas eliminar este tipo de servicio?')) {
       return;
     }
 
     try {
-      await usersService.deleteUser(id);
-      loadUsers();
+      await tiposDeServicioService.delete(id);
+      loadTiposDeServicio();
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Error al eliminar usuario');
+      setError(error instanceof Error ? error.message : 'Error al eliminar tipo de servicio');
     }
   };
 
-  const handleEdit = (user: User) => {
-    router.push(`/dashboard/users/edit/${user.id}`);
+  const handleEdit = (tipoDeServicio: TipoDeServicio) => {
+    router.push(`/dashboard/tipos-de-servicio/edit/${tipoDeServicio.id}`);
   };
 
   if (status === 'loading') {
@@ -105,13 +105,13 @@ export default function UsersPage() {
     <DashboardLayout>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Usuarios</h1>
+          <h1 className="text-2xl font-bold">Tipos de Servicio</h1>
           <Button
-            onClick={() => router.push('/dashboard/users/create')}
+            onClick={() => router.push('/dashboard/tipos-de-servicio/create')}
             className="inline-flex items-center"
           >
             <PlusIcon className="-ml-0.5 mr-2 h-4 w-4" />
-            Nuevo Usuario
+            Nuevo Tipo de Servicio
           </Button>
         </div>
 
@@ -121,8 +121,8 @@ export default function UsersPage() {
           </div>
         )}
 
-        <UsersTable
-          users={users}
+        <TiposDeServicioTable
+          tiposDeServicio={tiposDeServicio}
           total={total}
           page={page}
           limit={limit}

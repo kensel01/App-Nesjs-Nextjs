@@ -1,39 +1,59 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { ClientesService } from './clientes.service';
-import { Auth } from 'src/auth/decorators/auth.decorator';
-import { Role } from 'src/common/enums/rol.enum';
-import { ActiveUser } from 'src/common/decorators/active-user.decorator';
-import { UserActiveInterface } from 'src/common/interfaces/user-active.interface';
 import { CreateClienteDto } from './dto/create-cliente.dto';
 import { UpdateClienteDto } from './dto/update-cliente.dto';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { Role } from '../common/enums/rol.enum';
+import { ActiveUser } from '../common/decorators/active-user.decorator';
+import { UserActiveInterface } from '../common/interfaces/user-active.interface';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
-@Auth(Role.ADMIN, Role.TECNICO)
+@ApiTags('Clientes')
+@ApiBearerAuth()
 @Controller('clientes')
 export class ClientesController {
   constructor(private readonly clientesService: ClientesService) {}
 
+  @Auth(Role.ADMIN, Role.TECNICO)
   @Post()
-  create(@Body() createClienteDto: CreateClienteDto, @ActiveUser() user: UserActiveInterface) {
+  create(
+    @Body() createClienteDto: CreateClienteDto,
+    @ActiveUser() user: UserActiveInterface,
+  ) {
     return this.clientesService.create(createClienteDto, user);
   }
 
+  @Auth(Role.ADMIN, Role.TECNICO)
   @Get()
   findAll(@ActiveUser() user: UserActiveInterface) {
     return this.clientesService.findAll(user);
   }
 
+  @Auth(Role.ADMIN, Role.TECNICO)
   @Get(':id')
-  findOne(@Param('id') id: number,@ActiveUser() user: UserActiveInterface) {
-    return this.clientesService.findOne(id,user);
+  findOne(
+    @Param('id') id: number,
+    @ActiveUser() user: UserActiveInterface,
+  ) {
+    return this.clientesService.findOne(id, user);
   }
 
+  @Auth(Role.ADMIN, Role.TECNICO)
   @Patch(':id')
-  update(@Param('id') id: number, @Body() updateClienteDto: UpdateClienteDto,@ActiveUser() user: UserActiveInterface) {
+  update(
+    @Param('id') id: number,
+    @Body() updateClienteDto: UpdateClienteDto,
+    @ActiveUser() user: UserActiveInterface,
+  ) {
     return this.clientesService.update(id, updateClienteDto, user);
   }
 
+  @Auth(Role.ADMIN, Role.TECNICO)
   @Delete(':id')
-  remove(@Param('id') id: number, @ActiveUser() user: UserActiveInterface) {
+  remove(
+    @Param('id') id: number,
+    @ActiveUser() user: UserActiveInterface,
+  ) {
     return this.clientesService.remove(id, user);
   }
 } 

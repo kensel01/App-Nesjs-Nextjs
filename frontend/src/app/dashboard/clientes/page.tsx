@@ -4,22 +4,22 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import UsersTable from '@/components/users/UsersTable';
-import { usersService } from '@/services/users.service';
-import { User } from '@/types/user.types';
+import ClientesTable from '@/components/clientes/ClientesTable';
+import { clientesService } from '@/services/clientes.service';
+import { Cliente } from '@/types/cliente.types';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
 
-export default function UsersPage() {
+export default function ClientesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [users, setUsers] = useState<User[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<keyof User>('name');
+  const [sortBy, setSortBy] = useState<keyof Cliente>('name');
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('ASC');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -29,20 +29,20 @@ export default function UsersPage() {
     }
   }, [status, router]);
 
-  const loadUsers = async () => {
+  const loadClientes = async () => {
     try {
       setIsLoading(true);
-      const response = await usersService.getUsers({
+      const response = await clientesService.getClientes({
         page,
         limit,
         search: searchQuery,
         sortBy,
         sortOrder,
       });
-      setUsers(response.users);
+      setClientes(response.clientes);
       setTotal(response.total);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Error al cargar usuarios');
+      setError(error instanceof Error ? error.message : 'Error al cargar clientes');
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +50,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      loadUsers();
+      loadClientes();
     }
   }, [page, sortBy, sortOrder, searchQuery, status]);
 
@@ -58,7 +58,7 @@ export default function UsersPage() {
     setPage(newPage);
   };
 
-  const handleSort = (field: keyof User) => {
+  const handleSort = (field: keyof Cliente) => {
     if (field === sortBy) {
       setSortOrder(sortOrder === 'ASC' ? 'DESC' : 'ASC');
     } else {
@@ -73,20 +73,20 @@ export default function UsersPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar este usuario?')) {
+    if (!confirm('¿Estás seguro de que deseas eliminar este cliente?')) {
       return;
     }
 
     try {
-      await usersService.deleteUser(id);
-      loadUsers();
+      await clientesService.delete(id);
+      loadClientes();
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Error al eliminar usuario');
+      setError(error instanceof Error ? error.message : 'Error al eliminar cliente');
     }
   };
 
-  const handleEdit = (user: User) => {
-    router.push(`/dashboard/users/edit/${user.id}`);
+  const handleEdit = (cliente: Cliente) => {
+    router.push(`/dashboard/clientes/edit/${cliente.id}`);
   };
 
   if (status === 'loading') {
@@ -105,13 +105,13 @@ export default function UsersPage() {
     <DashboardLayout>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Usuarios</h1>
+          <h1 className="text-2xl font-bold">Clientes</h1>
           <Button
-            onClick={() => router.push('/dashboard/users/create')}
+            onClick={() => router.push('/dashboard/clientes/create')}
             className="inline-flex items-center"
           >
             <PlusIcon className="-ml-0.5 mr-2 h-4 w-4" />
-            Nuevo Usuario
+            Nuevo Cliente
           </Button>
         </div>
 
@@ -121,8 +121,8 @@ export default function UsersPage() {
           </div>
         )}
 
-        <UsersTable
-          users={users}
+        <ClientesTable
+          clientes={clientes}
           total={total}
           page={page}
           limit={limit}

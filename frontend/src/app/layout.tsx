@@ -1,9 +1,9 @@
 "use client";
 
 import { Inter } from 'next/font/google';
-import { ToastContainer } from 'react-toastify';
 import { SessionProvider } from 'next-auth/react';
-import { ThemeProvider } from '@/components/theme/ThemeProvider';
+import { ThemeProvider } from 'next-themes';
+import { ToastContainer } from 'react-toastify';
 import { cn } from '@/lib/utils';
 import 'react-toastify/dist/ReactToastify.css';
 import './globals.css';
@@ -17,28 +17,28 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body
-        className={cn(
-          inter.className,
-          'min-h-screen bg-background font-sans antialiased'
-        )}
-      >
+      <body className={cn(inter.className, 'min-h-screen bg-background')}>
         <SessionProvider>
-          <ThemeProvider defaultTheme="system">
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
             {children}
+            <ToastContainer
+              position="bottom-right"
+              autoClose={3000}
+              hideProgressBar={false}
+              newestOnTop
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="colored"
+            />
           </ThemeProvider>
-          <ToastContainer
-            position="bottom-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            newestOnTop
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="colored"
-          />
         </SessionProvider>
       </body>
     </html>
