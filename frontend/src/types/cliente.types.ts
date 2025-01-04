@@ -1,7 +1,16 @@
 export interface TipoDeServicio {
   id: number;
   name: string;
-  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateTipoDeServicioDto {
+  name: string;
+}
+
+export interface UpdateTipoDeServicioDto {
+  name?: string;
 }
 
 export interface Cliente {
@@ -13,9 +22,10 @@ export interface Cliente {
   direccion: string;
   comuna: string;
   ciudad: string;
-  tipoDeServicio: TipoDeServicio;
-  createdAt: Date;
-  updatedAt: Date;
+  tipoDeServicioId: number;
+  tipoDeServicio?: TipoDeServicio;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateClienteDto {
@@ -29,4 +39,13 @@ export interface CreateClienteDto {
   tipoDeServicioId: number;
 }
 
-export interface UpdateClienteDto extends Partial<CreateClienteDto> {} 
+export interface UpdateClienteDto {
+  name?: string;
+  rut?: string;
+  telefono?: string;
+  email?: string;
+  direccion?: string;
+  comuna?: string;
+  ciudad?: string;
+  tipoDeServicioId?: number;
+} 

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'react-toastify';
-import { User } from '@/types/user.types';
+import { User, Role } from '@/types/user.types';
 import { usersService } from '@/services/users.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,19 +31,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Role } from '@/types/user.types';
-import { userFormSchema } from '@/lib/validations/user';
+import { updateUserFormSchema } from '@/lib/validations/user';
 import type { z } from 'zod';
 
-type EditUserForm = z.infer<typeof userFormSchema>;
+type UpdateUserForm = z.infer<typeof updateUserFormSchema>;
 
 export default function EditUserPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
-  const form = useForm<EditUserForm>({
-    resolver: zodResolver(userFormSchema),
+  const form = useForm<UpdateUserForm>({
+    resolver: zodResolver(updateUserFormSchema),
     defaultValues: {
       name: '',
       email: '',
@@ -54,7 +53,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const userData = await usersService.getUser(Number(params.id));
+        const userData = await usersService.getById(Number(params.id));
         setUser(userData);
         form.reset({
           name: userData.name,
@@ -71,10 +70,10 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
     fetchUser();
   }, [params.id, form, router]);
 
-  const onSubmit = async (data: EditUserForm) => {
+  const onSubmit = async (data: UpdateUserForm) => {
     try {
       setIsLoading(true);
-      await usersService.updateUser(Number(params.id), data);
+      await usersService.update(Number(params.id), data);
       toast.success('Usuario actualizado correctamente');
       router.push('/dashboard/users');
     } catch (error) {

@@ -14,13 +14,13 @@ interface GetClientesResponse {
   total: number;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const getHeaders = async () => {
   const session = await getSession();
   return {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${session?.user?.token}`,
+    Authorization: `Bearer ${session?.user?.accessToken}`,
   };
 };
 
@@ -41,12 +41,12 @@ export const clientesService = {
         ...(sortOrder && { sortOrder }),
       });
 
-      const response = await fetch(
-        `${API_URL}/api/v1/clientes?${queryParams}`,
-        {
-          headers: await getHeaders(),
-        }
-      );
+      const url = `${API_URL}/api/v1/clientes?${queryParams}`;
+      console.log('URL de la petición:', url);
+
+      const response = await fetch(url, {
+        headers: await getHeaders(),
+      });
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
@@ -54,9 +54,8 @@ export const clientesService = {
       }
 
       const data = await response.json();
-      console.log('Respuesta del servidor:', data); // Para debug
+      console.log('Respuesta del servidor:', data);
 
-      // Si la respuesta es null o undefined
       if (!data) {
         return {
           clientes: [],
@@ -64,7 +63,6 @@ export const clientesService = {
         };
       }
 
-      // Si la respuesta es un array directamente
       if (Array.isArray(data)) {
         return {
           clientes: data,
@@ -72,7 +70,6 @@ export const clientesService = {
         };
       }
 
-      // Si la respuesta es un objeto con la propiedad data que contiene los clientes
       if (data.data && Array.isArray(data.data)) {
         return {
           clientes: data.data,
@@ -80,7 +77,6 @@ export const clientesService = {
         };
       }
 
-      // Si la respuesta es un objeto con la propiedad clientes
       if (data.clientes && Array.isArray(data.clientes)) {
         return {
           clientes: data.clientes,
@@ -88,15 +84,15 @@ export const clientesService = {
         };
       }
 
-      // Si no podemos manejar el formato de la respuesta
       throw new Error('Formato de respuesta inválido');
     } catch (error) {
-      console.error('Error en getClientes:', error); // Para debug
+      console.error('Error en getClientes:', error);
       throw error;
     }
   },
 
   getById: async (id: number): Promise<Cliente> => {
+    console.log('URL de la petición:', `${API_URL}/api/v1/clientes/${id}`);
     const response = await fetch(`${API_URL}/api/v1/clientes/${id}`, {
       headers: await getHeaders(),
     });
@@ -110,6 +106,7 @@ export const clientesService = {
   },
 
   create: async (data: CreateClienteDto): Promise<Cliente> => {
+    console.log('URL de la petición:', `${API_URL}/api/v1/clientes`);
     const response = await fetch(`${API_URL}/api/v1/clientes`, {
       method: 'POST',
       headers: await getHeaders(),
@@ -125,6 +122,7 @@ export const clientesService = {
   },
 
   update: async (id: number, data: UpdateClienteDto): Promise<Cliente> => {
+    console.log('URL de la petición:', `${API_URL}/api/v1/clientes/${id}`);
     const response = await fetch(`${API_URL}/api/v1/clientes/${id}`, {
       method: 'PATCH',
       headers: await getHeaders(),
@@ -140,6 +138,7 @@ export const clientesService = {
   },
 
   delete: async (id: number): Promise<void> => {
+    console.log('URL de la petición:', `${API_URL}/api/v1/clientes/${id}`);
     const response = await fetch(`${API_URL}/api/v1/clientes/${id}`, {
       method: 'DELETE',
       headers: await getHeaders(),

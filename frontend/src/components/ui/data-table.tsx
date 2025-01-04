@@ -55,14 +55,7 @@ export function DataTable<T extends object>({
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const totalPages = Math.ceil(total / limit);
-  const { check, userRole } = usePermissions();
-
-  console.log('DataTable - Current permissions:', {
-    resource,
-    userRole,
-    canUpdate: check(resource, 'update'),
-    canDelete: check(resource, 'delete'),
-  });
+  const { check } = usePermissions();
 
   const canUpdate = check(resource, 'update');
   const canDelete = check(resource, 'delete');

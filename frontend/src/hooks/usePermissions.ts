@@ -1,34 +1,35 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-
-type Resource = 'users' | 'clients' | 'service-types';
-type Action = 'create' | 'read' | 'update' | 'delete';
+import { PERMISSIONS } from '@/types/permission.types';
+import type { Resource, Action, PermissionCheck } from '@/types/permission.types';
 
 export function usePermissions() {
   const { data: session } = useSession();
+  const userRole = session?.user?.role;
 
-  const hasPermission = (resource: Resource, action: Action): boolean => {
-    if (!session?.user) return false;
+  const check = (resource: Resource, action: Action): boolean => {
+    if (!userRole) return false;
 
-    const { role } = session.user;
+    const permission = PERMISSIONS.find(
+      (p) => p.resource === resource && p.action === action
+    );
 
-    // Por ahora, el admin tiene todos los permisos
-    if (role === 'admin') return true;
+    return permission ? permission.roles.includes(userRole) : false;
+  };
 
-    // Aquí podemos definir los permisos específicos para cada rol
-    const permissions: Record<string, Record<Resource, Action[]>> = {
-      user: {
-        users: ['read'],
-        clients: ['read', 'create', 'update'],
-        'service-types': ['read'],
-      },
-    };
+  const checkMany = (checks: PermissionCheck[]): boolean => {
+    return checks.every((c) => check(c.resource, c.action));
+  };
 
-    return permissions[role]?.[resource]?.includes(action) ?? false;
+  const checkAny = (checks: PermissionCheck[]): boolean => {
+    return checks.some((c) => check(c.resource, c.action));
   };
 
   return {
-    hasPermission,
+    check,
+    checkMany,
+    checkAny,
+    userRole,
   };
 } 

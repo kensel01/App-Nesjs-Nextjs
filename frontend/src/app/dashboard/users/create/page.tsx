@@ -1,15 +1,23 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import { Role } from '@/types/user.types';
-import { userFormSchema } from '@/lib/validations/user';
+import { createUserFormSchema } from '@/lib/validations/user';
 import { usersService } from '@/services/users.service';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -17,7 +25,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form';
 import {
   Select,
@@ -26,52 +33,46 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Eye, EyeOff } from 'lucide-react';
 import type { z } from 'zod';
 
-type FormData = z.infer<typeof userFormSchema>;
+type CreateUserForm = z.infer<typeof createUserFormSchema>;
 
 export default function CreateUserPage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<FormData>({
-    resolver: zodResolver(userFormSchema),
+  const form = useForm<CreateUserForm>({
+    resolver: zodResolver(createUserFormSchema),
     defaultValues: {
       name: '',
       email: '',
       password: '',
       confirmPassword: '',
-      role: 'user',
+      role: undefined,
     },
   });
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: CreateUserForm) => {
     try {
       setIsLoading(true);
-      const { confirmPassword, ...userData } = data;
-      await usersService.create(userData);
+      await usersService.create({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        role: data.role,
+      });
       toast.success('Usuario creado correctamente');
       router.push('/dashboard/users');
     } catch (error) {
       console.error('Error creating user:', error);
-      toast.error(error instanceof Error ? error.message : 'Error al crear usuario');
+      toast.error(error instanceof Error ? error.message : 'Error al crear el usuario');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="container mx-auto py-6">
+    <DashboardLayout>
       <Card>
         <CardHeader>
           <CardTitle>Crear Usuario</CardTitle>
@@ -81,7 +82,7 @@ export default function CreateUserPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -89,7 +90,7 @@ export default function CreateUserPage() {
                   <FormItem>
                     <FormLabel>Nombre</FormLabel>
                     <FormControl>
-                      <Input placeholder="John Doe" {...field} />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -103,7 +104,7 @@ export default function CreateUserPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="john@example.com" {...field} />
+                      <Input {...field} type="email" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -116,21 +117,9 @@ export default function CreateUserPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Contraseña</FormLabel>
-                    <div className="relative">
-                      <FormControl>
-                        <Input
-                          type={showPassword ? "text" : "password"}
-                          {...field}
-                        />
-                      </FormControl>
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2"
-                      >
-                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                      </button>
-                    </div>
+                    <FormControl>
+                      <Input {...field} type="password" />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -142,21 +131,9 @@ export default function CreateUserPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Confirmar Contraseña</FormLabel>
-                    <div className="relative">
-                      <FormControl>
-                        <Input
-                          type={showConfirmPassword ? "text" : "password"}
-                          {...field}
-                        />
-                      </FormControl>
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2"
-                      >
-                        {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                      </button>
-                    </div>
+                    <FormControl>
+                      <Input {...field} type="password" />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -168,42 +145,42 @@ export default function CreateUserPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Rol</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecciona un rol" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="admin">Administrador</SelectItem>
-                        <SelectItem value="user">Usuario</SelectItem>
+                        <SelectItem value={Role.ADMIN}>Administrador</SelectItem>
+                        <SelectItem value={Role.USER}>Usuario</SelectItem>
+                        <SelectItem value={Role.TECNICO}>Técnico</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormDescription>
-                      El rol determina los permisos del usuario en el sistema
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <div className="flex justify-end space-x-4">
+              <div className="flex justify-end space-x-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => router.push('/dashboard/users')}
-                  disabled={isLoading}
                 >
                   Cancelar
                 </Button>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading ? 'Creando usuario...' : 'Crear Usuario'}
+                  {isLoading ? 'Creando...' : 'Crear Usuario'}
                 </Button>
               </div>
             </form>
           </Form>
         </CardContent>
       </Card>
-    </div>
+    </DashboardLayout>
   );
 } 

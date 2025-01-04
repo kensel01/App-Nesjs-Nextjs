@@ -3,10 +3,11 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { usePermissions } from '@/hooks/usePermissions';
+import type { Resource, Action } from '@/types/permission.types';
 
 interface PagePermissionGuardProps {
-  resource: 'users' | 'clients' | 'service-types';
-  action: 'create' | 'read' | 'update' | 'delete';
+  resource: Resource;
+  action: Action;
   children: React.ReactNode;
 }
 
@@ -16,15 +17,15 @@ export function PagePermissionGuard({
   children,
 }: PagePermissionGuardProps) {
   const router = useRouter();
-  const { hasPermission } = usePermissions();
+  const { check } = usePermissions();
 
   useEffect(() => {
-    if (!hasPermission(resource, action)) {
+    if (!check(resource, action)) {
       router.push('/dashboard');
     }
-  }, [resource, action, hasPermission, router]);
+  }, [resource, action, check, router]);
 
-  if (!hasPermission(resource, action)) {
+  if (!check(resource, action)) {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-lg text-gray-500">

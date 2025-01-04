@@ -5,6 +5,8 @@ import { TiposDeServicioModule } from './tipos-de-servicio/tipos-de-servicio.mod
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
+import { DashboardModule } from './dashboard/dashboard.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -12,7 +14,7 @@ import { ConfigModule } from '@nestjs/config';
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: process.env.POSTGRES_HOST ,
+      host: process.env.POSTGRES_HOST,
       port: parseInt(process.env.POSTGRES_PORT) || 5436,
       username: process.env.POSTGRES_USER,
       password: String(process.env.POSTGRES_PASSWORD),
@@ -21,18 +23,19 @@ import { ConfigModule } from '@nestjs/config';
       synchronize: true,
       ssl: process.env.POSTGRES_SSL === 'true',
       extra: {
-        ssl: 
-          process.env.POSTGRES_SSL === 'true' 
-          ? { 
-            rejectUnauthorized: false,
-            } 
-          : null,
+        ssl:
+          process.env.POSTGRES_SSL === 'true'
+            ? {
+                rejectUnauthorized: false,
+              }
+            : null,
       },
     }),
     ClientesModule,
-    TiposDeServicioModule, 
+    TiposDeServicioModule,
     UsersModule,
     AuthModule,
+    DashboardModule,
   ],
   controllers: [],
   providers: [],

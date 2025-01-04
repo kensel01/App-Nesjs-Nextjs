@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import ClientesTable from '@/components/clientes/ClientesTable';
 import { clientesService } from '@/services/clientes.service';
 import { Cliente } from '@/types/cliente.types';
@@ -72,6 +71,11 @@ export default function ClientesPage() {
     setPage(1);
   };
 
+  const handleFilter = (filters: any[]) => {
+    // Implementar la lógica de filtrado si es necesario
+    console.log('Filtros aplicados:', filters);
+  };
+
   const handleDelete = async (id: number) => {
     if (!confirm('¿Estás seguro de que deseas eliminar este cliente?')) {
       return;
@@ -102,40 +106,39 @@ export default function ClientesPage() {
   }
 
   return (
-    <DashboardLayout>
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Clientes</h1>
-          <Button
-            onClick={() => router.push('/dashboard/clientes/create')}
-            className="inline-flex items-center"
-          >
-            <PlusIcon className="-ml-0.5 mr-2 h-4 w-4" />
-            Nuevo Cliente
-          </Button>
-        </div>
-
-        {error && (
-          <div className="bg-red-50 p-4 rounded-lg">
-            <p className="text-red-700">{error}</p>
-          </div>
-        )}
-
-        <ClientesTable
-          clientes={clientes}
-          total={total}
-          page={page}
-          limit={limit}
-          onPageChange={handlePageChange}
-          onDelete={handleDelete}
-          onEdit={handleEdit}
-          onSort={handleSort}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          onSearch={handleSearch}
-          isLoading={isLoading}
-        />
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Clientes</h1>
+        <Button
+          onClick={() => router.push('/dashboard/clientes/create')}
+          className="inline-flex items-center"
+        >
+          <PlusIcon className="-ml-0.5 mr-2 h-4 w-4" />
+          Nuevo Cliente
+        </Button>
       </div>
-    </DashboardLayout>
+
+      {error && (
+        <div className="bg-red-50 p-4 rounded-lg">
+          <p className="text-red-700">{error}</p>
+        </div>
+      )}
+
+      <ClientesTable
+        clientes={clientes}
+        total={total}
+        page={page}
+        limit={limit}
+        onPageChange={handlePageChange}
+        onDelete={handleDelete}
+        onEdit={handleEdit}
+        onSort={handleSort}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSearch={handleSearch}
+        onFilter={handleFilter}
+        isLoading={isLoading}
+      />
+    </div>
   );
 } 

@@ -26,20 +26,15 @@ export function useUsers({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [page, limit, sortBy, sortOrder, searchQuery, filters]);
-
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      const response = await usersService.getAll({
+      const response = await usersService.getUsers({
         page,
         limit,
+        search: searchQuery,
         sortBy,
         sortOrder,
-        search: searchQuery,
-        filters: filters.length > 0 ? JSON.stringify(filters) : undefined,
       });
       setUsers(response.users);
       setTotal(response.total);
@@ -51,6 +46,10 @@ export function useUsers({
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchUsers();
+  }, [page, limit, sortBy, sortOrder, searchQuery]);
 
   const deleteUser = async (id: number) => {
     try {
