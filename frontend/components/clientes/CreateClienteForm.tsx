@@ -16,8 +16,8 @@ export default function CreateClienteForm() {
   useEffect(() => {
     const fetchTiposDeServicio = async () => {
       try {
-        const data = await tiposDeServicioService.getAll();
-        setTiposDeServicio(data);
+        const { tiposDeServicio } = await tiposDeServicioService.getTiposDeServicio();
+        setTiposDeServicio(tiposDeServicio);
       } catch (err) {
         console.error('Error al cargar los tipos de servicio:', err);
       }

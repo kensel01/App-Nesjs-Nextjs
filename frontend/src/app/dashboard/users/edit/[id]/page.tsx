@@ -145,7 +145,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                     <SelectContent>
                       <SelectItem value={Role.ADMIN}>Administrador</SelectItem>
                       <SelectItem value={Role.USER}>Usuario</SelectItem>
-                      <SelectItem value={Role.TECHNICIAN}>Técnico</SelectItem>
+                      <SelectItem value={Role.TECNICO}>Técnico</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
