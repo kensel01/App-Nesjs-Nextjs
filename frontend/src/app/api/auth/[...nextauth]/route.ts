@@ -1,14 +1,21 @@
-import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { ENDPOINTS } from "@/config/api";
+import NextAuth, { AuthOptions } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { LoginResponse, ErrorResponse } from '@/types/user.types';
 
-const handler = NextAuth({
+if (!process.env.NEXT_PUBLIC_API_URL) {
+  throw new Error('NEXT_PUBLIC_API_URL must be defined');
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
-      name: "Credentials",
+      id: 'credentials',
+      name: 'Credentials',
       credentials: {
-        email: { label: "Email", type: "text" },
-        password: { label: "Password", type: "password" }
+        email: { label: 'Email', type: 'text' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -16,12 +23,11 @@ const handler = NextAuth({
         }
 
         try {
-          const loginUrl = ENDPOINTS.AUTH.LOGIN;
-          console.log('Intentando login con URL:', loginUrl);
+          console.log('Attempting login with:', API_URL);
           
-          const response = await fetch(loginUrl, {
+          const res = await fetch(`${API_URL}/api/v1/auth/login`, {
             method: 'POST',
-            headers: {
+            headers: { 
               'Content-Type': 'application/json',
               'Accept': 'application/json',
             },
@@ -31,60 +37,64 @@ const handler = NextAuth({
             }),
           });
 
-          console.log('Respuesta del servidor:', response.status);
-          const data = await response.json();
-          console.log('Datos recibidos:', data);
+          console.log('Login response status:', res.status);
 
-          if (!response.ok) {
-            const errorMessage = data.message || 'Error al iniciar sesión';
-            console.error('Login error:', errorMessage);
-            throw new Error(errorMessage);
+          if (!res.ok) {
+            const error = await res.json() as ErrorResponse;
+            console.error('Login error response:', error);
+            throw new Error(error.message || 'Error en la autenticación');
           }
 
-          // Asumiendo que el backend devuelve { token, email }
+          const data = await res.json();
+          console.log('Login response data:', data);
+
           return {
-            id: data.email,
+            id: 1,
             email: data.email,
-            token: data.token,
-            name: data.email
-          };
-        } catch (error: any) {
-          console.error('Error completo:', error);
-          throw new Error(error.message || 'Error al iniciar sesión');
+            name: data.email.split('@')[0],
+            role: 'admin',
+            accessToken: data.token,
+          } as any;
+        } catch (error) {
+          console.error('Auth error:', error);
+          throw error instanceof Error ? error : new Error('Error en la autenticación');
         }
-      }
-    })
+      },
+    }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        token.id = Number(user.id);
         token.email = user.email;
-        token.token = user.token;
+        token.name = user.name;
+        token.role = user.role;
+        token.accessToken = user.accessToken;
       }
       return token;
     },
     async session({ session, token }) {
-      if (token) {
-        session.user = {
-          ...session.user,
-          email: token.email as string,
-          token: token.token as string
-        };
-        session.token = token.token as string;
+      if (session?.user) {
+        session.user.id = Number(token.id);
+        session.user.email = token.email;
+        session.user.name = token.name;
+        session.user.role = token.role;
+        session.user.accessToken = token.accessToken;
       }
       return session;
-    }
+    },
   },
   pages: {
-    signIn: '/login',
-    error: '/login'
+    signIn: '/auth/login',
+    error: '/auth/error',
   },
   session: {
     strategy: 'jwt',
-    maxAge: 24 * 60 * 60, // 24 hours
+    maxAge: 30 * 24 * 60 * 60, // 30 días
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: true,
-});
+  debug: process.env.NODE_ENV === 'development',
+};
 
+const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };

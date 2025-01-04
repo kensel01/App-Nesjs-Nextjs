@@ -1,7 +1,8 @@
 'use client';
 
-import { signIn, signOut, useSession } from 'next-auth/react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { signIn, signOut, useSession } from 'next-auth/react';
 import { toast } from 'react-toastify';
 
 interface LoginCredentials {
@@ -9,9 +10,18 @@ interface LoginCredentials {
   password: string;
 }
 
-export const useAuth = () => {
+export function useAuth() {
   const router = useRouter();
   const { data: session, status } = useSession();
+
+  console.log('useAuth - Current session:', session);
+  console.log('useAuth - Session status:', status);
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
 
   const login = async (credentials: LoginCredentials) => {
     try {
@@ -19,6 +29,8 @@ export const useAuth = () => {
         ...credentials,
         redirect: false,
       });
+
+      console.log('Login result:', result);
 
       if (result?.error) {
         toast.error(result.error);
@@ -39,10 +51,9 @@ export const useAuth = () => {
     }
   };
 
-  const logout = async () => {
+  const handleLogout = async () => {
     try {
       await signOut({ redirect: false });
-      toast.success('Sesión cerrada correctamente');
       router.push('/login');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
@@ -51,11 +62,13 @@ export const useAuth = () => {
   };
 
   return {
-    login,
-    logout,
     session,
     status,
-    isAuthenticated: status === 'authenticated',
+    login,
+    handleLogout,
     isLoading: status === 'loading',
+    isAuthenticated: status === 'authenticated',
+    user: session?.user,
+    role: session?.user?.role,
   };
-}; 
+} 

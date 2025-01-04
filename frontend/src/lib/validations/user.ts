@@ -18,7 +18,7 @@ export const userFormSchema = z.object({
     .regex(/[0-9]/, 'Debe contener al menos un número')
     .regex(/[^A-Za-z0-9]/, 'Debe contener al menos un carácter especial'),
   confirmPassword: z.string(),
-  role: z.nativeEnum(Role, {
+  role: z.enum(['admin', 'user'] as const, {
     errorMap: () => ({ message: 'Selecciona un rol válido' })
   }),
 }).refine((data) => data.password === data.confirmPassword, {

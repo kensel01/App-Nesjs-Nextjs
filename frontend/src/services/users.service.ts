@@ -1,88 +1,80 @@
-import { ENDPOINTS } from '@/config/api';
-import { User } from '@/types/user.types';
-import { getSession } from 'next-auth/react';
+'use client';
 
-interface GetUsersParams {
-  page: number;
-  limit: number;
-  search?: string;
-  sortBy?: keyof User;
-  sortOrder?: 'ASC' | 'DESC';
-}
-
-interface GetUsersResponse {
-  users: User[];
-  total: number;
-}
+import { CreateUserDTO, UpdateUserDTO, User } from '@/types/user.types';
+import { getHeaders } from '@/lib/auth';
 
 class UsersService {
-  private async getAuthHeaders() {
-    const session = await getSession();
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session?.token}`,
-    };
-  }
+  private baseUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/users`;
 
-  async getUsers(params: GetUsersParams): Promise<GetUsersResponse> {
-    const queryParams = new URLSearchParams({
-      page: params.page.toString(),
-      limit: params.limit.toString(),
-      ...(params.search && { search: params.search }),
-      ...(params.sortBy && { sortBy: params.sortBy }),
-      ...(params.sortOrder && { sortOrder: params.sortOrder }),
+  async getAll(params: Record<string, any> = {}): Promise<{ users: User[]; total: number }> {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        queryParams.append(key, String(value));
+      }
     });
 
-    const response = await fetch(`${ENDPOINTS.USERS.BASE}?${queryParams}`, {
-      headers: await this.getAuthHeaders(),
+    const response = await fetch(`${this.baseUrl}?${queryParams.toString()}`, {
+      headers: await getHeaders(),
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error al obtener usuarios');
+      throw new Error('Error al obtener usuarios');
     }
 
     return response.json();
   }
 
-  async deleteUser(id: number): Promise<void> {
-    const response = await fetch(`${ENDPOINTS.USERS.BASE}/${id}`, {
-      method: 'DELETE',
-      headers: await this.getAuthHeaders(),
+  async getById(id: number): Promise<User> {
+    const response = await fetch(`${this.baseUrl}/${id}`, {
+      headers: await getHeaders(),
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error al eliminar usuario');
+      throw new Error('Error al obtener usuario');
     }
+
+    return response.json();
   }
 
-  async updateUser(id: number, data: Partial<User>): Promise<User> {
-    const response = await fetch(`${ENDPOINTS.USERS.BASE}/${id}`, {
-      method: 'PATCH',
-      headers: await this.getAuthHeaders(),
+  async create(data: CreateUserDTO): Promise<User> {
+    const response = await fetch(this.baseUrl, {
+      method: 'POST',
+      headers: await getHeaders(),
       body: JSON.stringify(data),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Error al actualizar usuario');
+      throw new Error(error.message || 'Error al crear usuario');
     }
 
     return response.json();
   }
 
-  async getUser(id: number): Promise<User> {
-    const response = await fetch(`${ENDPOINTS.USERS.BASE}/${id}`, {
-      headers: await this.getAuthHeaders(),
+  async update(id: number, data: UpdateUserDTO): Promise<User> {
+    const response = await fetch(`${this.baseUrl}/${id}`, {
+      method: 'PATCH',
+      headers: await getHeaders(),
+      body: JSON.stringify(data),
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error al obtener usuario');
+      throw new Error('Error al actualizar usuario');
     }
 
     return response.json();
+  }
+
+  async delete(id: number): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/${id}`, {
+      method: 'DELETE',
+      headers: await getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error('Error al eliminar usuario');
+    }
   }
 }
 

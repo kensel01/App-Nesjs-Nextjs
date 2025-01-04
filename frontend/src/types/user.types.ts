@@ -1,27 +1,36 @@
-export enum Role {
-  ADMIN = 'admin',
-  USER = 'user',
-  TECHNICIAN = 'tecnico'
-}
+export type Role = 'admin' | 'user';
 
 export interface User {
   id: number;
   name: string;
   email: string;
   role: Role;
-  createdAt?: Date;
-  updatedAt?: Date;
+  accessToken?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface CreateUserDto {
+export interface CreateUserDTO {
   name: string;
   email: string;
   password: string;
   role: Role;
 }
 
-export interface UpdateUserDto {
+export interface UpdateUserDTO {
   name?: string;
   email?: string;
+  password?: string;
   role?: Role;
+}
+
+export interface LoginResponse {
+  user: User;
+  accessToken: string;
+  message?: string;
+}
+
+export interface ErrorResponse {
+  message: string;
+  statusCode?: number;
 } 
