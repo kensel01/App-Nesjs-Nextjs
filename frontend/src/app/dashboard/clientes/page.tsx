@@ -21,12 +21,24 @@ export default function ClientesPage() {
   const [sortBy, setSortBy] = useState<keyof Cliente>('name');
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('ASC');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
     }
   }, [status, router]);
+
+  // Detectar si es móvil
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const loadClientes = async () => {
     try {
@@ -95,8 +107,8 @@ export default function ClientesPage() {
 
   if (status === 'loading') {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      <div className="flex justify-center items-center min-h-[300px]">
+        <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-gray-900"></div>
       </div>
     );
   }
@@ -107,19 +119,19 @@ export default function ClientesPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Clientes</h1>
+      <div className={`flex ${isMobile ? 'flex-col' : 'flex-row justify-between'} items-start sm:items-center mb-4 gap-3`}>
+        <h1 className="text-xl sm:text-2xl font-bold">Clientes</h1>
         <Button
           onClick={() => router.push('/dashboard/clientes/create')}
-          className="inline-flex items-center"
+          className="inline-flex items-center text-sm sm:text-base py-1 sm:py-2 w-full sm:w-auto justify-center"
         >
-          <PlusIcon className="-ml-0.5 mr-2 h-4 w-4" />
+          <PlusIcon className="mr-1 h-4 w-4" />
           Nuevo Cliente
         </Button>
       </div>
 
       {error && (
-        <div className="bg-red-50 p-4 rounded-lg">
+        <div className="bg-red-50 p-3 sm:p-4 rounded-lg text-sm">
           <p className="text-red-700">{error}</p>
         </div>
       )}
