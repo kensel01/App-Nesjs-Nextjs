@@ -1,9 +1,9 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { DashboardService } from './dashboard.service';
 import { AuthGuard } from '../auth/guard/auth.guard';
 import { RolesGuard } from '../auth/guard/roles.guard';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { Role } from '../common/enums/rol.enum';
+import { DashboardService } from './dashboard.service';
 
 @Controller('dashboard')
 @UseGuards(AuthGuard, RolesGuard)

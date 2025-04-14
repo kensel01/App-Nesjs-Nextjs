@@ -11,6 +11,8 @@ import { Auth } from './decorators/auth.decorator';
 import { ActiveUser } from 'src/common/decorators/active-user.decorator';
 import { User } from 'src/users/entities/user.entity';
 import { UserActiveInterface } from 'src/common/interfaces/user-active.interface';
+import { AuthThrottle } from './decorators/auth-throttler.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 interface RequestWithUser extends Request{
     user:{
@@ -25,16 +27,18 @@ export class AuthController {
 
 
     @Post('register')
-        register(
-            @Body()
-            registerDto:RegisterDto,
-            
-        ){  
-            console.log(registerDto)
-            return this.authService.register(registerDto);
-        }
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
+    register(
+        @Body()
+        registerDto:RegisterDto,
+        
+    ){  
+        console.log(registerDto)
+        return this.authService.register(registerDto);
+    }
         
     @Post('login')
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
     login(
         @Body()
         loginDto:LoginDto,
