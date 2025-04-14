@@ -5,6 +5,7 @@ import { KPICard } from '@/components/dashboard/KPICard';
 import { ServiceDistributionChart } from '@/components/dashboard/ServiceDistributionChart';
 import { MonthlyRegistrationsChart } from '@/components/dashboard/MonthlyRegistrationsChart';
 import { PagePermissionGuard } from '@/components/auth/PagePermissionGuard';
+import { NotificationDemo } from '@/components/dashboard/NotificationDemo';
 
 export default function DashboardPage() {
   const { data, isLoading, error } = useDashboard();
@@ -55,6 +56,9 @@ export default function DashboardPage() {
             description="Promedio"
           />
         </div>
+
+        {/* Notification Demo */}
+        <NotificationDemo />
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">

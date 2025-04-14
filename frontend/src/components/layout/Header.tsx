@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { UserIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import NotificationIndicator from '@/components/notifications/NotificationIndicator';
 
 export default function Header() {
   const { theme, setTheme } = useTheme();
@@ -45,6 +46,8 @@ export default function Header() {
         </div>
 
         <div className="flex items-center space-x-1 md:space-x-2">
+          <NotificationIndicator />
+          
           <Button
             variant="ghost"
             size="icon"
