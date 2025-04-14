@@ -10,7 +10,9 @@ import {
   UsersIcon,
   UserGroupIcon,
   WrenchScrewdriverIcon,
+  UserIcon,
 } from '@heroicons/react/24/outline';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -25,6 +27,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const [isMounted, setIsMounted] = useState(false);
+  const { check, userRole } = usePermissions();
 
   useEffect(() => {
     setIsMounted(true);
@@ -39,21 +42,31 @@ export default function Sidebar({
       href: '/dashboard',
       label: 'Dashboard',
       icon: HomeIcon,
+      show: true,
     },
     {
       href: '/dashboard/users',
       label: 'Usuarios',
       icon: UsersIcon,
+      show: check('users', 'read'),
     },
     {
       href: '/dashboard/clientes',
       label: 'Clientes',
       icon: UserGroupIcon,
+      show: check('clients', 'read'),
     },
     {
       href: '/dashboard/tipos-de-servicio',
       label: 'Tipos de Servicio',
       icon: WrenchScrewdriverIcon,
+      show: check('service-types', 'read'),
+    },
+    {
+      href: '/dashboard/profile',
+      label: 'Mi Perfil',
+      icon: UserIcon,
+      show: check('profile', 'read'),
     },
   ];
 
@@ -68,7 +81,7 @@ export default function Sidebar({
     >
       <div className="h-full px-3 py-4 overflow-y-auto">
         <ul className="space-y-2">
-          {links.map(({ href, label, icon: Icon }) => (
+          {links.filter(link => link.show).map(({ href, label, icon: Icon }) => (
             <li key={href}>
               <Link href={href}>
                 <Button

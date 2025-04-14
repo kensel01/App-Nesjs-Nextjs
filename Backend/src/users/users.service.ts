@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository, Like, FindOptionsWhere, ILike } from 'typeorm';
 import { Role } from '../common/enums/rol.enum';
+import * as bcryptjs from 'bcryptjs';
 
 interface FindUsersParams {
   page?: number;
@@ -104,5 +105,39 @@ export class UsersService {
       await this.userRepository.delete(id);
     }
     return user;
+  }
+
+  async updateProfile(email: string, updateUserDto: UpdateUserDto) {
+    try {
+      const user = await this.findOneEmail(email);
+      
+      if (!user) {
+        throw new NotFoundException('Usuario no encontrado');
+      }
+      
+      // No permitir cambiar el rol desde este endpoint
+      delete updateUserDto.role;
+      
+      // Si se está actualizando la contraseña, hay que encriptarla
+      if (updateUserDto.password) {
+        updateUserDto.password = await bcryptjs.hash(updateUserDto.password, 10);
+      }
+      
+      // No permitir cambiar el email desde este endpoint para evitar problemas de seguridad
+      delete updateUserDto.email;
+      
+      await this.userRepository.update(user.id, updateUserDto);
+      
+      return {
+        success: true,
+        message: 'Perfil actualizado exitosamente',
+        user: await this.findOne(user.id)
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Error al actualizar el perfil');
+    }
   }
 }

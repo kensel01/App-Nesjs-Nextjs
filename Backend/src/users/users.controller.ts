@@ -4,7 +4,12 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { Role } from '../common/enums/rol.enum';
+import { ActiveUser } from '../common/decorators/active-user.decorator';
+import { UserActiveInterface } from '../common/interfaces/user-active.interface';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Users')
+@ApiBearerAuth()
 @Controller('users')
 @Auth(Role.ADMIN)
 export class UsersController {
@@ -45,5 +50,14 @@ export class UsersController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
+  }
+
+  @Patch('profile/me')
+  @Auth(Role.ADMIN, Role.USER, Role.TECNICO)
+  updateProfile(
+    @Body() updateUserDto: UpdateUserDto,
+    @ActiveUser() user: UserActiveInterface,
+  ) {
+    return this.usersService.updateProfile(user.email, updateUserDto);
   }
 }

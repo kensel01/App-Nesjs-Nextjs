@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signIn, useSession } from 'next-auth/react';
@@ -18,6 +19,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { toast } from 'react-toastify';
 
+// Original login schema: password is required and must have at least 6 characters
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
@@ -31,12 +33,6 @@ export default function LoginPage() {
   const { data: session } = useSession();
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
 
-  useEffect(() => {
-    if (session?.user) {
-      router.replace(callbackUrl);
-    }
-  }, [session, router, callbackUrl]);
-
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -44,6 +40,12 @@ export default function LoginPage() {
       password: '',
     },
   });
+
+  useEffect(() => {
+    if (session?.user) {
+      router.replace(callbackUrl);
+    }
+  }, [session, router, callbackUrl]);
 
   const onSubmit = async (data: LoginForm) => {
     try {
@@ -74,9 +76,9 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <div className="p-8 bg-white rounded-lg shadow-lg dark:bg-gray-800">
-        <h1 className="text-2xl font-bold mb-6">Iniciar Sesión</h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+      <div className="p-8 bg-white rounded-lg shadow-lg dark:bg-gray-800 w-full max-w-md">
+        <h1 className="text-2xl font-bold mb-6 text-center">Iniciar Sesión</h1>
+        <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">
           Ingresa tus credenciales para acceder
         </p>
         <Form {...form}>
@@ -107,6 +109,14 @@ export default function LoginPage() {
                 </FormItem>
               )}
             />
+            <div className="flex items-center justify-between mb-4">
+              <Link
+                href="/auth/forgot-password"
+                className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
             <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
               {form.formState.isSubmitting ? 'Iniciando sesión...' : 'Iniciar sesión'}
             </Button>

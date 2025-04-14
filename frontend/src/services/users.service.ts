@@ -16,6 +16,12 @@ interface GetUsersResponse {
   total: number;
 }
 
+interface UpdateProfileResponse {
+  success: boolean;
+  message: string;
+  user: User;
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const getHeaders = async () => {
@@ -158,6 +164,26 @@ export const usersService = {
     }
 
     return response.json();
+  },
+
+  updateProfile: async (data: UpdateUserDTO): Promise<UpdateProfileResponse> => {
+    try {
+      const response = await fetch(`${API_URL}/api/v1/users/profile/me`, {
+        method: 'PATCH',
+        headers: await getHeaders(),
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Error al actualizar el perfil');
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error('Error en updateProfile:', error);
+      throw error;
+    }
   },
 
   delete: async (id: number): Promise<void> => {

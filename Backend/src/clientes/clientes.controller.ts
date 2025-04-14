@@ -14,7 +14,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 export class ClientesController {
   constructor(private readonly clientesService: ClientesService) {}
 
-  @Auth(Role.ADMIN, Role.TECNICO)
+  @Auth(Role.ADMIN, Role.USER, Role.TECNICO)
   @Post()
   create(
     @Body() createClienteDto: CreateClienteDto,
@@ -23,13 +23,13 @@ export class ClientesController {
     return this.clientesService.create(createClienteDto, user);
   }
 
-  @Auth(Role.ADMIN, Role.TECNICO)
+  @Auth(Role.ADMIN, Role.USER, Role.TECNICO)
   @Get()
   findAll(@ActiveUser() user: UserActiveInterface) {
     return this.clientesService.findAll(user);
   }
 
-  @Auth(Role.ADMIN, Role.TECNICO)
+  @Auth(Role.ADMIN, Role.USER, Role.TECNICO)
   @Get(':id')
   findOne(
     @Param('id') id: number,
@@ -38,7 +38,7 @@ export class ClientesController {
     return this.clientesService.findOne(id, user);
   }
 
-  @Auth(Role.ADMIN, Role.TECNICO)
+  @Auth(Role.ADMIN, Role.USER)
   @Patch(':id')
   update(
     @Param('id') id: number,
@@ -48,7 +48,7 @@ export class ClientesController {
     return this.clientesService.update(id, updateClienteDto, user);
   }
 
-  @Auth(Role.ADMIN, Role.TECNICO)
+  @Auth(Role.ADMIN)
   @Delete(':id')
   remove(
     @Param('id') id: number,

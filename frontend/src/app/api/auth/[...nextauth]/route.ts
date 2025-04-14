@@ -18,16 +18,16 @@ export const authOptions: AuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
+        // For normal users, validate that email and password are provided
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Email y contraseña son requeridos');
         }
 
         try {
           console.log('Attempting login with:', API_URL);
-          
           const res = await fetch(`${API_URL}/api/v1/auth/login`, {
             method: 'POST',
-            headers: { 
+            headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
             },
@@ -40,7 +40,7 @@ export const authOptions: AuthOptions = {
           console.log('Login response status:', res.status);
 
           if (!res.ok) {
-            const error = await res.json() as ErrorResponse;
+            const error = await res.json();
             console.error('Login error response:', error);
             throw new Error(error.message || 'Error en la autenticación');
           }
@@ -49,12 +49,12 @@ export const authOptions: AuthOptions = {
           console.log('Login response data:', data);
 
           return {
-            id: 1,
+            id: data.id || 1,
             email: data.email,
             name: data.email.split('@')[0],
-            role: 'admin',
+            role: data.role || 'user',
             accessToken: data.token,
-          } as any;
+          };
         } catch (error) {
           console.error('Auth error:', error);
           throw error instanceof Error ? error : new Error('Error en la autenticación');
