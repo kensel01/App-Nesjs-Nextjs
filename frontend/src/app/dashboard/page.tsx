@@ -6,6 +6,7 @@ import { ServiceDistributionChart } from '@/components/dashboard/ServiceDistribu
 import { MonthlyRegistrationsChart } from '@/components/dashboard/MonthlyRegistrationsChart';
 import { PagePermissionGuard } from '@/components/auth/PagePermissionGuard';
 import { NotificationDemo } from '@/components/dashboard/NotificationDemo';
+import { Role } from '@/types/user.types';
 
 export default function DashboardPage() {
   const { data, isLoading, error } = useDashboard();
@@ -27,7 +28,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <PagePermissionGuard resource="dashboard" action="read">
+    <PagePermissionGuard allowedRoles={[Role.ADMIN, Role.USER, Role.TECNICO]}>
       <div className="space-y-4 sm:space-y-6">
         <h1 className="text-xl sm:text-2xl font-bold">Dashboard</h1>
 

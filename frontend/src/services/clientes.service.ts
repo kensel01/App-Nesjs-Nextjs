@@ -15,6 +15,8 @@ interface GetClientesResponse {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // milliseconds
 
 const getHeaders = async () => {
   const session = await getSession();
@@ -22,6 +24,36 @@ const getHeaders = async () => {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${session?.user?.accessToken}`,
   };
+};
+
+// Helper function to wait for specified milliseconds
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Fetch with retry logic
+const fetchWithRetry = async (url: string, options: RequestInit, retries = MAX_RETRIES, delay = RETRY_DELAY) => {
+  try {
+    const response = await fetch(url, options);
+    
+    // If we get rate limited (429), wait and retry
+    if (response.status === 429 && retries > 0) {
+      // Get retry-after header or use default delay
+      const retryAfter = response.headers.get('retry-after');
+      const delayMs = retryAfter ? parseInt(retryAfter) * 1000 : delay;
+      
+      console.log(`Rate limited. Retrying after ${delayMs}ms. Retries left: ${retries-1}`);
+      await wait(delayMs);
+      return fetchWithRetry(url, options, retries - 1, delay * 1.5); // Exponential backoff
+    }
+    
+    return response;
+  } catch (error) {
+    if (retries > 0) {
+      console.log(`Network error. Retrying after ${delay}ms. Retries left: ${retries-1}`);
+      await wait(delay);
+      return fetchWithRetry(url, options, retries - 1, delay * 1.5); // Exponential backoff
+    }
+    throw error;
+  }
 };
 
 export const clientesService = {
@@ -44,7 +76,7 @@ export const clientesService = {
       const url = `${API_URL}/api/v1/clientes?${queryParams}`;
       console.log('URL de la petición:', url);
 
-      const response = await fetch(url, {
+      const response = await fetchWithRetry(url, {
         headers: await getHeaders(),
       });
 
@@ -93,7 +125,7 @@ export const clientesService = {
 
   getById: async (id: number): Promise<Cliente> => {
     console.log('URL de la petición:', `${API_URL}/api/v1/clientes/${id}`);
-    const response = await fetch(`${API_URL}/api/v1/clientes/${id}`, {
+    const response = await fetchWithRetry(`${API_URL}/api/v1/clientes/${id}`, {
       headers: await getHeaders(),
     });
 
@@ -107,7 +139,7 @@ export const clientesService = {
 
   create: async (data: CreateClienteDto): Promise<Cliente> => {
     console.log('URL de la petición:', `${API_URL}/api/v1/clientes`);
-    const response = await fetch(`${API_URL}/api/v1/clientes`, {
+    const response = await fetchWithRetry(`${API_URL}/api/v1/clientes`, {
       method: 'POST',
       headers: await getHeaders(),
       body: JSON.stringify(data),
@@ -123,7 +155,7 @@ export const clientesService = {
 
   update: async (id: number, data: UpdateClienteDto): Promise<Cliente> => {
     console.log('URL de la petición:', `${API_URL}/api/v1/clientes/${id}`);
-    const response = await fetch(`${API_URL}/api/v1/clientes/${id}`, {
+    const response = await fetchWithRetry(`${API_URL}/api/v1/clientes/${id}`, {
       method: 'PATCH',
       headers: await getHeaders(),
       body: JSON.stringify(data),
@@ -139,7 +171,7 @@ export const clientesService = {
 
   delete: async (id: number): Promise<void> => {
     console.log('URL de la petición:', `${API_URL}/api/v1/clientes/${id}`);
-    const response = await fetch(`${API_URL}/api/v1/clientes/${id}`, {
+    const response = await fetchWithRetry(`${API_URL}/api/v1/clientes/${id}`, {
       method: 'DELETE',
       headers: await getHeaders(),
     });

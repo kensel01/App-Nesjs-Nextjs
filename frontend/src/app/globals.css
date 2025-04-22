@@ -68,7 +68,7 @@
 
 @layer base {
   * {
-    @apply border-border;
+    /* Eliminar la referencia a border-border */
   }
 
   body {

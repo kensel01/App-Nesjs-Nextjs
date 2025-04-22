@@ -1,5 +1,5 @@
 import { ENDPOINTS } from '@/config/api';
-import { CreateUserDto } from '@/types/user.types';
+import { CreateUserDTO } from '@/types/user.types';
 
 class AuthService {
   async login(email: string, password: string) {
@@ -19,7 +19,7 @@ class AuthService {
     return response.json();
   }
 
-  async register(data: CreateUserDto) {
+  async register(data: CreateUserDTO) {
     const response = await fetch(ENDPOINTS.AUTH.REGISTER, {
       method: 'POST',
       headers: {

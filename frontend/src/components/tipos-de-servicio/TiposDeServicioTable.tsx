@@ -29,12 +29,6 @@ const filterOptions: FilterOption<TipoDeServicio>[] = [
     type: 'text',
     operators: ['equals', 'contains', 'startsWith', 'endsWith'],
   },
-  {
-    field: 'description',
-    label: 'Descripción',
-    type: 'text',
-    operators: ['contains'],
-  },
 ];
 
 export default function TiposDeServicioTable({
@@ -54,7 +48,6 @@ export default function TiposDeServicioTable({
 }: TiposDeServicioTableProps) {
   const columns: Column<TipoDeServicio>[] = [
     { key: 'name', label: 'Nombre', sortable: true },
-    { key: 'description', label: 'Descripción', sortable: true },
   ];
 
   const handleDelete = async (id: number) => {
@@ -79,7 +72,7 @@ export default function TiposDeServicioTable({
       isLoading={isLoading}
       searchPlaceholder="Buscar tipos de servicio..."
       filterOptions={filterOptions}
-      resource="serviceTypes"
+      resource="service-types"
       onPageChange={onPageChange}
       onSort={onSort}
       onSearch={onSearch}

@@ -12,9 +12,14 @@ import {
   WrenchScrewdriverIcon,
   UserIcon,
   XMarkIcon,
+  UserPlusIcon,
+  ArrowDownIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useSidebarStore } from '@/store/sidebar';
+import { useSession } from 'next-auth/react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -31,6 +36,15 @@ export default function Sidebar({
   const [isMounted, setIsMounted] = useState(false);
   const { check, userRole } = usePermissions();
   const { isMobile, setIsMobile, toggle } = useSidebarStore();
+  const { data: session } = useSession();
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
+
+  // Expandir automáticamente un menú si estamos en una ruta dentro de él
+  useEffect(() => {
+    if (pathname.startsWith('/dashboard/users')) {
+      setExpandedMenus(prev => ({ ...prev, users: true }));
+    }
+  }, [pathname]);
 
   // Actualizar el estado móvil en cambios de tamaño de ventana
   useEffect(() => {
@@ -51,6 +65,16 @@ export default function Sidebar({
     return null;
   }
 
+  const toggleMenu = (menuId: string) => {
+    setExpandedMenus(prev => ({
+      ...prev,
+      [menuId]: !prev[menuId],
+    }));
+  };
+
+  // Determinar si el usuario es administrador
+  const isAdmin = session?.user?.role === 'admin';
+
   const links = [
     {
       href: '/dashboard',
@@ -59,10 +83,26 @@ export default function Sidebar({
       show: true,
     },
     {
-      href: '/dashboard/users',
+      id: 'users',
       label: 'Usuarios',
       icon: UsersIcon,
       show: check('users', 'read'),
+      submenu: true,
+      expanded: expandedMenus['users'] || false,
+      items: [
+        {
+          href: '/dashboard/users',
+          label: 'Listado de Usuarios',
+          icon: UsersIcon,
+          show: check('users', 'read'),
+        },
+        {
+          href: '/dashboard/users/create',
+          label: 'Crear Usuario',
+          icon: UserPlusIcon,
+          show: check('users', 'create'),
+        },
+      ],
     },
     {
       href: '/dashboard/clientes',
@@ -132,27 +172,80 @@ export default function Sidebar({
           )}
           
           <ul className="space-y-2">
-            {links.filter(link => link.show).map(({ href, label, icon: Icon }) => (
-              <li key={href}>
-                <Link href={href} onClick={handleLinkClick}>
-                  <Button
-                    variant="ghost"
-                    className={cn(
-                      'w-full justify-start gap-2 py-6 text-base',
-                      pathname === href && 'bg-gray-100 dark:bg-gray-800'
-                    )}
-                  >
-                    <Icon className="h-5 w-5 flex-shrink-0" />
-                    <span
+            {links.filter(link => link.show).map((link) => (
+              <li key={link.id || link.href}>
+                {link.submenu ? (
+                  <div className="space-y-1">
+                    <Button
+                      variant="ghost"
                       className={cn(
-                        'transition-opacity whitespace-nowrap',
-                        (isOpen || isMobile) ? 'opacity-100' : 'opacity-0'
+                        'w-full justify-between gap-2 py-6 text-base',
+                        (pathname.startsWith(link.href || '') || link.expanded) && 'bg-gray-100 dark:bg-gray-800'
+                      )}
+                      onClick={() => toggleMenu(link.id || '')}
+                    >
+                      <div className="flex items-center">
+                        <link.icon className="h-5 w-5 flex-shrink-0 mr-2" />
+                        <span
+                          className={cn(
+                            'transition-opacity whitespace-nowrap',
+                            (isOpen || isMobile) ? 'opacity-100' : 'opacity-0'
+                          )}
+                        >
+                          {link.label}
+                        </span>
+                      </div>
+                      {(isOpen || isMobile) && (
+                        link.expanded 
+                          ? <ChevronDownIcon className="h-4 w-4" />
+                          : <ChevronRightIcon className="h-4 w-4" />
+                      )}
+                    </Button>
+                    
+                    {link.expanded && (
+                      <ul className="pl-8 space-y-1">
+                        {link.items?.filter(item => item.show).map((item) => (
+                          <li key={item.href}>
+                            <Link href={item.href} onClick={handleLinkClick}>
+                              <Button
+                                variant="ghost"
+                                className={cn(
+                                  'w-full justify-start gap-2 py-3 text-sm',
+                                  pathname === item.href && 'bg-gray-100 dark:bg-gray-800'
+                                )}
+                              >
+                                <item.icon className="h-4 w-4 flex-shrink-0" />
+                                <span className="whitespace-nowrap">
+                                  {item.label}
+                                </span>
+                              </Button>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ) : (
+                  <Link href={link.href || ''} onClick={handleLinkClick}>
+                    <Button
+                      variant="ghost"
+                      className={cn(
+                        'w-full justify-start gap-2 py-6 text-base',
+                        pathname === link.href && 'bg-gray-100 dark:bg-gray-800'
                       )}
                     >
-                      {label}
-                    </span>
-                  </Button>
-                </Link>
+                      <link.icon className="h-5 w-5 flex-shrink-0" />
+                      <span
+                        className={cn(
+                          'transition-opacity whitespace-nowrap',
+                          (isOpen || isMobile) ? 'opacity-100' : 'opacity-0'
+                        )}
+                      >
+                        {link.label}
+                      </span>
+                    </Button>
+                  </Link>
+                )}
               </li>
             ))}
           </ul>

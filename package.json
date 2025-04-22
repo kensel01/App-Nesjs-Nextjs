@@ -1,0 +1,27 @@
+{
+  "name": "app-nestjs-nextjs",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "Backend",
+    "frontend",
+    "landing-page"
+  ],
+  "scripts": {
+    "dev:backend": "cd Backend && npm run start:dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:landing": "cd landing-page && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:landing\"",
+    "build:backend": "cd Backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build:landing": "cd landing-page && npm run build",
+    "build": "npm run build:backend && npm run build:frontend && npm run build:landing",
+    "start:backend": "cd Backend && npm run start:prod",
+    "start:frontend": "cd frontend && npm run start",
+    "start:landing": "cd landing-page && npm run preview",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\" \"npm run start:landing\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+} 

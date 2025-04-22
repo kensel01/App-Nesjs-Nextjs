@@ -197,4 +197,23 @@ export const usersService = {
       throw new Error(error.message || 'Error al eliminar el usuario');
     }
   },
+
+  toggleUserStatus: async (id: number): Promise<{ success: boolean; message: string; user: User }> => {
+    try {
+      const response = await fetch(`${API_URL}/api/v1/users/${id}/toggle-status`, {
+        method: 'PATCH',
+        headers: await getHeaders(),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Error al cambiar el estado del usuario');
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error('Error al cambiar el estado del usuario:', error);
+      throw error;
+    }
+  },
 }; 

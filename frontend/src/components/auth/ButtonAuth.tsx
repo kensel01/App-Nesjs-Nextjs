@@ -2,11 +2,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 
 export default function ButtonAuth() {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, handleLogout } = useAuth();
 
-  const handleLogout = async () => {
+  const onLogout = async () => {
     try {
-      await logout();
+      await handleLogout();
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
     }
@@ -15,7 +15,7 @@ export default function ButtonAuth() {
   return isAuthenticated ? (
     <Button
       variant="destructive"
-      onClick={handleLogout}
+      onClick={onLogout}
       className="ml-4"
     >
       Cerrar Sesión

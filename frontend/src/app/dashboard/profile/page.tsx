@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { usersService } from '@/services/users.service';
 import { useRouter } from 'next/navigation';
-import { UpdateUserDTO } from '@/types/user.types';
+import { UpdateUserDTO, Role } from '@/types/user.types';
 import { PagePermissionGuard } from '@/components/auth/PagePermissionGuard';
 
 export default function ProfilePage() {
@@ -75,7 +75,7 @@ export default function ProfilePage() {
   };
   
   return (
-    <PagePermissionGuard resource="profile" action="update">
+    <PagePermissionGuard allowedRoles={[Role.ADMIN, Role.USER, Role.TECNICO]}>
       <div className="max-w-md mx-auto">
         <Card>
           <CardHeader>

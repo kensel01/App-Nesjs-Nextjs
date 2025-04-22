@@ -9,12 +9,4 @@ export async function getHeaders(): Promise<HeadersInit> {
     'Content-Type': 'application/json',
     Authorization: session?.user?.accessToken ? `Bearer ${session.user.accessToken}` : '',
   };
-}
-
-export function getAuthHeaders() {
-  const { data: session } = useSession();
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${session?.token}`,
-  };
 } 

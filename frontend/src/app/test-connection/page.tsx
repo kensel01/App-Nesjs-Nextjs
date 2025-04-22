@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { testService } from '@/src/services/test.service';
-import { API_URL } from '@/src/config/api';
+import { testService } from '@/services/test.service';
+import { API_URL } from '@/config/api';
 
 export default function TestConnectionPage() {
   const [healthStatus, setHealthStatus] = useState<string>('');

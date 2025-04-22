@@ -9,6 +9,7 @@ export interface User {
   email: string;
   name: string;
   role: Role;
+  isActive: boolean;
   accessToken?: string;
   createdAt: string;
   updatedAt: string;
@@ -19,6 +20,7 @@ export interface CreateUserDTO {
   email: string;
   password: string;
   role: Role;
+  isActive?: boolean;
 }
 
 export interface UpdateUserDTO {
@@ -26,6 +28,7 @@ export interface UpdateUserDTO {
   email?: string;
   password?: string;
   role?: Role;
+  isActive?: boolean;
 }
 
 export interface LoginResponse {

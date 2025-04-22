@@ -24,7 +24,8 @@ export class AuthService {
         name, 
         email, 
         password: await bcryptjs.hash(password, 10),
-        role
+        role,
+        isActive: true
     });
     return {
         name,
@@ -36,12 +37,16 @@ export class AuthService {
     async login({email, password}:LoginDto){
         const user = await this.usersService.findEmailWithPassword(email);
         if(!user){
-            throw new UnauthorizedException ('email is wrong');
+            throw new UnauthorizedException('Email o contraseña incorrectos');
         }
 
-         const isPasswordValid= await bcryptjs.compare(password, user.password);
+        if (!user.isActive) {
+            throw new UnauthorizedException('Tu cuenta ha sido desactivada. Contacta al administrador.');
+        }
+
+        const isPasswordValid = await bcryptjs.compare(password, user.password);
         if(!isPasswordValid){
-            throw new UnauthorizedException('password is wrong')
+            throw new UnauthorizedException('Email o contraseña incorrectos');
         }
 
         const payload = {email: user.email, role: user.role};
@@ -50,10 +55,18 @@ export class AuthService {
         return {
             token,
             email,
+            role: user.role,
+            name: user.name
         };
     }
+    
     async profile({email, role}:{email:string, role:string}){
-        return await this.usersService.findOneEmail(email);
+        const user = await this.usersService.findOneEmail(email);
+        
+        if (!user.isActive) {
+            throw new UnauthorizedException('Tu cuenta ha sido desactivada. Contacta al administrador.');
+        }
+        
+        return user;
     }
-
 }

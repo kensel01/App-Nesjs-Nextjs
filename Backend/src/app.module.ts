@@ -16,7 +16,7 @@ import { APP_GUARD } from '@nestjs/core';
     }),
     ThrottlerModule.forRoot([{
       ttl: 60000, // tiempo en milisegundos (1 minuto)
-      limit: 10, // número máximo de peticiones en ese periodo
+      limit: 100, // número máximo de peticiones en ese periodo (aumentado de 10 a 100)
     }]),
     TypeOrmModule.forRoot({
       type: 'postgres',

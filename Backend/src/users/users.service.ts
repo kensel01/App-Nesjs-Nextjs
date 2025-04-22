@@ -13,6 +13,7 @@ interface FindUsersParams {
   search?: string;
   sortBy?: string;
   sortOrder?: 'ASC' | 'DESC';
+  isActive?: boolean;
 }
 
 @Injectable()
@@ -23,6 +24,11 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserDto) {
+    // Si se proporciona una contraseña, hash antes de guardar
+    if (createUserDto.password) {
+      createUserDto.password = await bcryptjs.hash(createUserDto.password, 10);
+    }
+    
     return await this.userRepository.save(createUserDto);
   }
 
@@ -33,18 +39,33 @@ export class UsersService {
       search = '',
       sortBy = 'name',
       sortOrder = 'ASC',
+      isActive,
     } = params;
 
     const skip = (page - 1) * limit;
 
     let where: FindOptionsWhere<User> | FindOptionsWhere<User>[] = {};
 
+    // Si se proporciona isActive, filtramos por ese campo
+    if (isActive !== undefined) {
+      where = { isActive };
+    }
+
     if (search) {
-      // Primero intentamos buscar por nombre y email
-      where = [
-        { name: ILike(`%${search}%`) },
-        { email: ILike(`%${search}%`) },
-      ];
+      // Función para crear la condición de búsqueda
+      const createSearchCondition = (baseCondition: any = {}) => {
+        return [
+          { ...baseCondition, name: ILike(`%${search}%`) },
+          { ...baseCondition, email: ILike(`%${search}%`) },
+        ];
+      };
+
+      // Si ya tenemos una condición (isActive), la combinamos con la búsqueda
+      if (Object.keys(where).length > 0) {
+        where = createSearchCondition(where);
+      } else {
+        where = createSearchCondition();
+      }
 
       // Si el término de búsqueda coincide con algún rol, agregamos la búsqueda por rol
       const upperSearch = search.toUpperCase();
@@ -54,7 +75,14 @@ export class UsersService {
       );
 
       if (matchingRoles.length > 0) {
-        where = [...where, ...matchingRoles.map(role => ({ role }))];
+        const roleConditions = matchingRoles.map(role => {
+          if (isActive !== undefined) {
+            return { role, isActive };
+          }
+          return { role };
+        });
+        
+        where = [...where, ...roleConditions];
       }
     }
 
@@ -65,7 +93,7 @@ export class UsersService {
       },
       skip,
       take: limit,
-      select: ['id', 'name', 'email', 'role', 'createdAt', 'updatedAt'],
+      select: ['id', 'name', 'email', 'role', 'isActive', 'createdAt', 'updatedAt'],
     });
 
     return {
@@ -79,7 +107,7 @@ export class UsersService {
   async findOne(id: number) {
     return await this.userRepository.findOne({
       where: { id },
-      select: ['id', 'name', 'email', 'role', 'createdAt', 'updatedAt'],
+      select: ['id', 'name', 'email', 'role', 'isActive', 'createdAt', 'updatedAt'],
     });
   }
 
@@ -90,11 +118,22 @@ export class UsersService {
   async findEmailWithPassword(email: string) {
     return await this.userRepository.findOne({
       where: { email },
-      select: ['id', 'name', 'email', 'password', 'role'],
+      select: ['id', 'name', 'email', 'password', 'role', 'isActive'],
     });
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
+    // Si se proporciona una contraseña, hash antes de actualizar
+    if (updateUserDto.password) {
+      updateUserDto.password = await bcryptjs.hash(updateUserDto.password, 10);
+    }
+    
+    const user = await this.findOne(id);
+    
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    
     await this.userRepository.update(id, updateUserDto);
     return this.findOne(id);
   }
@@ -118,6 +157,9 @@ export class UsersService {
       // No permitir cambiar el rol desde este endpoint
       delete updateUserDto.role;
       
+      // No permitir cambiar el estado de activación desde este endpoint
+      delete updateUserDto.isActive;
+      
       // Si se está actualizando la contraseña, hay que encriptarla
       if (updateUserDto.password) {
         updateUserDto.password = await bcryptjs.hash(updateUserDto.password, 10);
@@ -139,5 +181,23 @@ export class UsersService {
       }
       throw new BadRequestException('Error al actualizar el perfil');
     }
+  }
+
+  async toggleUserStatus(id: number) {
+    const user = await this.findOne(id);
+    
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    
+    const newStatus = !user.isActive;
+    
+    await this.userRepository.update(id, { isActive: newStatus });
+    
+    return {
+      success: true,
+      message: `Usuario ${newStatus ? 'activado' : 'desactivado'} exitosamente`,
+      user: await this.findOne(id)
+    };
   }
 }

@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { UserIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import NotificationIndicator from '@/components/notifications/NotificationIndicator';
+import { NotificationIndicator } from '@/components/notifications/NotificationIndicator';
 
 export default function Header() {
   const { theme, setTheme } = useTheme();

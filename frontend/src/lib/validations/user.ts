@@ -40,4 +40,25 @@ export const updateUserFormSchema = z.object({
   role: z.nativeEnum(Role, {
     errorMap: () => ({ message: 'Selecciona un rol válido' })
   }),
+});
+
+export const userFormSchema = z.object({
+  name: z.string().min(2, {
+    message: 'El nombre debe tener al menos 2 caracteres.',
+  }),
+  email: z.string().email({
+    message: 'Por favor ingrese un correo electrónico válido.',
+  }),
+  password: z.string().min(8, {
+    message: 'La contraseña debe tener al menos 8 caracteres.',
+  }),
+  confirmPassword: z.string().min(8, {
+    message: 'La confirmación de contraseña debe tener al menos 8 caracteres.',
+  }),
+  role: z.nativeEnum(Role, {
+    errorMap: () => ({ message: 'Por favor seleccione un rol válido.' }),
+  }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Las contraseñas no coinciden.',
+  path: ['confirmPassword'],
 }); 

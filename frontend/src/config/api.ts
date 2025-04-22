@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
 // Asegurarse de que la URL no termine en /
 const baseUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;

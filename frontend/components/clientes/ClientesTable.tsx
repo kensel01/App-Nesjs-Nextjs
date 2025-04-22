@@ -17,8 +17,8 @@ export default function ClientesTable() {
     const fetchClientes = async () => {
       try {
         if (session) {
-          const data = await clientesService.getAll();
-          setClientes(data);
+          const response = await clientesService.getClientes({});
+          setClientes(response.clientes);
           setError(null);
         }
       } catch (err) {
@@ -99,7 +99,7 @@ export default function ClientesTable() {
               <td className="px-6 py-4 whitespace-nowrap">{cliente.comuna}</td>
               <td className="px-6 py-4 whitespace-nowrap">{cliente.ciudad}</td>
               <td className="px-6 py-4 whitespace-nowrap">
-                {cliente.tipoDeServicio.name}
+                {cliente.tipoDeServicio?.name || 'No asignado'}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                 <Link
