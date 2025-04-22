@@ -1,11 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { signIn, useSession } from 'next-auth/react';
+import { Suspense } from 'react';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,13 +22,20 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-export default function LoginPage() {
+function LoginContent() {
+  const { useEffect } = require('react');
+  const { useRouter, useSearchParams } = require('next/navigation');
+  const Link = require('next/link').default;
+  const { useForm } = require('react-hook-form');
+  const { zodResolver } = require('@hookform/resolvers/zod');
+  const { signIn, useSession } = require('next-auth/react');
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
 
-  const form = useForm<LoginForm>({
+  const form = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
@@ -47,7 +49,7 @@ export default function LoginPage() {
     }
   }, [session, router, callbackUrl]);
 
-  const onSubmit = async (data: LoginForm) => {
+  const onSubmit = async (data: { email: string; password: string }) => {
     try {
       const result = await signIn('credentials', {
         email: data.email,
@@ -124,5 +126,13 @@ export default function LoginPage() {
         </Form>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Cargando...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 } 

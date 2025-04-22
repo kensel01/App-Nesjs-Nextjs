@@ -59,9 +59,16 @@ export default function TiposDeServicioTable({
       toast.error(error instanceof Error ? error.message : 'Error al eliminar tipo de servicio');
     }
   };
+  
+  const handleEdit = (id: number) => {
+    const tipoDeServicio = tiposDeServicio.find(t => t.id === id);
+    if (tipoDeServicio) {
+      onEdit(tipoDeServicio);
+    }
+  };
 
   return (
-    <DataTable
+    <DataTable<TipoDeServicio, number>
       data={tiposDeServicio}
       columns={columns}
       total={total}
@@ -77,7 +84,7 @@ export default function TiposDeServicioTable({
       onSort={onSort}
       onSearch={onSearch}
       onFilterChange={onFilter}
-      onEdit={onEdit}
+      onEdit={handleEdit}
       onDelete={handleDelete}
       getItemId={(tipo) => tipo.id}
     />

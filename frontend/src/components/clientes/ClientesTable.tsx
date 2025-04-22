@@ -109,8 +109,15 @@ export default function ClientesTable({
     }
   };
 
+  const handleEdit = (id: number) => {
+    const cliente = clientes.find(c => c.id === id);
+    if (cliente) {
+      onEdit(cliente);
+    }
+  };
+
   return (
-    <DataTable
+    <DataTable<Cliente, number>
       data={clientes}
       columns={columns}
       total={total}
@@ -126,7 +133,7 @@ export default function ClientesTable({
       onSort={onSort}
       onSearch={onSearch}
       onFilterChange={onFilter}
-      onEdit={onEdit}
+      onEdit={handleEdit}
       onDelete={handleDelete}
       getItemId={(cliente) => cliente.id}
     />

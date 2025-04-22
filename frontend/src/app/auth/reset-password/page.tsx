@@ -1,12 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { Suspense } from 'react';
 import { z } from 'zod';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -19,7 +14,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
 
 const resetPasswordSchema = z.object({
   password: z.string()
@@ -35,7 +29,15 @@ const resetPasswordSchema = z.object({
 
 type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
+  const { useState } = require('react');
+  const { useForm } = require('react-hook-form');
+  const { zodResolver } = require('@hookform/resolvers/zod');
+  const Link = require('next/link').default;
+  const { useRouter, useSearchParams } = require('next/navigation');
+  const { ArrowLeft } = require('lucide-react');
+  const { useToast } = require('@/components/ui/use-toast');
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -43,7 +45,7 @@ export default function ResetPasswordPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const { toast } = useToast();
 
-  const form = useForm<ResetPasswordForm>({
+  const form = useForm({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
       password: '',
@@ -51,7 +53,7 @@ export default function ResetPasswordPage() {
     },
   });
 
-  const onSubmit = async (data: ResetPasswordForm) => {
+  const onSubmit = async (data: { password: string; confirmPassword: string }) => {
     try {
       if (!token) {
         toast({
@@ -205,5 +207,13 @@ export default function ResetPasswordPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Cargando...</div>}>
+      <ResetPasswordContent />
+    </Suspense>
   );
 } 

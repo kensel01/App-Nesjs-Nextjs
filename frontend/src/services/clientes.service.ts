@@ -1,5 +1,7 @@
 import { Cliente, CreateClienteDto, UpdateClienteDto } from '@/types/cliente.types';
-import { getSession } from 'next-auth/react';
+import { logger } from '@/lib/logger';
+import { BaseApiService } from './base-api.service';
+import { PaginationMeta } from '@/types/pagination.types';
 
 interface GetClientesParams {
   page?: number;
@@ -9,176 +11,130 @@ interface GetClientesParams {
   sortOrder?: 'ASC' | 'DESC';
 }
 
-interface GetClientesResponse {
-  clientes: Cliente[];
-  total: number;
-}
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // milliseconds
-
-const getHeaders = async () => {
-  const session = await getSession();
-  return {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${session?.user?.accessToken}`,
-  };
-};
-
-// Helper function to wait for specified milliseconds
-const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Fetch with retry logic
-const fetchWithRetry = async (url: string, options: RequestInit, retries = MAX_RETRIES, delay = RETRY_DELAY) => {
-  try {
-    const response = await fetch(url, options);
-    
-    // If we get rate limited (429), wait and retry
-    if (response.status === 429 && retries > 0) {
-      // Get retry-after header or use default delay
-      const retryAfter = response.headers.get('retry-after');
-      const delayMs = retryAfter ? parseInt(retryAfter) * 1000 : delay;
-      
-      console.log(`Rate limited. Retrying after ${delayMs}ms. Retries left: ${retries-1}`);
-      await wait(delayMs);
-      return fetchWithRetry(url, options, retries - 1, delay * 1.5); // Exponential backoff
-    }
-    
-    return response;
-  } catch (error) {
-    if (retries > 0) {
-      console.log(`Network error. Retrying after ${delay}ms. Retries left: ${retries-1}`);
-      await wait(delay);
-      return fetchWithRetry(url, options, retries - 1, delay * 1.5); // Exponential backoff
-    }
-    throw error;
+class ClientesService extends BaseApiService {
+  constructor() {
+    super();
   }
-};
 
-export const clientesService = {
-  getClientes: async ({
-    page = 1,
-    limit = 10,
-    search = '',
-    sortBy = 'name',
-    sortOrder = 'ASC',
-  }: GetClientesParams = {}): Promise<GetClientesResponse> => {
+  async getClientes(params: GetClientesParams = {}): Promise<{ clientes: Cliente[]; total: number }> {
     try {
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-        ...(search && { search }),
-        ...(sortBy && { sortBy }),
-        ...(sortOrder && { sortOrder }),
+      const { page = 1, limit = 10, search = '', sortBy, sortOrder } = params;
+      let filters = {};
+      
+      if (search) {
+        filters = { ...filters, search };
+      }
+      
+      if (sortBy) {
+        filters = { ...filters, sortBy, sortOrder };
+      }
+      
+      const url = `${this.API_URL}/api/v1/clientes?page=${page}&limit=${limit}${this.buildFilterParams(filters)}`;
+      logger.log('URL de la petición:', url);
+      
+      const response = await this.fetchWithRetry(url, {
+        headers: await this.getHeaders(),
       });
-
-      const url = `${API_URL}/api/v1/clientes?${queryParams}`;
-      console.log('URL de la petición:', url);
-
-      const response = await fetchWithRetry(url, {
-        headers: await getHeaders(),
-      });
-
+      
       if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || 'Error al obtener los clientes');
+        throw new Error(`Error en la petición: ${response.status} ${response.statusText}`);
       }
-
+      
       const data = await response.json();
-      console.log('Respuesta del servidor:', data);
-
+      logger.log('Respuesta del servidor:', data);
+      
       if (!data) {
-        return {
-          clientes: [],
-          total: 0,
-        };
+        throw new Error('No se recibieron datos del servidor');
       }
-
-      if (Array.isArray(data)) {
-        return {
-          clientes: data,
-          total: data.length,
-        };
-      }
-
-      if (data.data && Array.isArray(data.data)) {
-        return {
-          clientes: data.data,
-          total: data.total || data.data.length,
-        };
-      }
-
-      if (data.clientes && Array.isArray(data.clientes)) {
-        return {
-          clientes: data.clientes,
-          total: data.total || data.clientes.length,
-        };
-      }
-
-      throw new Error('Formato de respuesta inválido');
+      
+      return {
+        clientes: data.data || [],
+        total: (data.meta?.total) || 0
+      };
     } catch (error) {
-      console.error('Error en getClientes:', error);
+      logger.error('Error en getClientes:', error);
       throw error;
     }
-  },
+  }
 
-  getById: async (id: number): Promise<Cliente> => {
-    console.log('URL de la petición:', `${API_URL}/api/v1/clientes/${id}`);
-    const response = await fetchWithRetry(`${API_URL}/api/v1/clientes/${id}`, {
-      headers: await getHeaders(),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Error al obtener el cliente');
+  async getById(id: number): Promise<Cliente> {
+    try {
+      logger.log('URL de la petición:', `${this.API_URL}/api/v1/clientes/${id}`);
+      
+      const response = await this.fetchWithRetry(`${this.API_URL}/api/v1/clientes/${id}`, {
+        headers: await this.getHeaders(),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error al obtener cliente: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      logger.error('Error en getById:', error);
+      throw error;
     }
+  }
 
-    return response.json();
-  },
-
-  create: async (data: CreateClienteDto): Promise<Cliente> => {
-    console.log('URL de la petición:', `${API_URL}/api/v1/clientes`);
-    const response = await fetchWithRetry(`${API_URL}/api/v1/clientes`, {
-      method: 'POST',
-      headers: await getHeaders(),
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Error al crear el cliente');
+  async create(data: CreateClienteDto): Promise<Cliente> {
+    try {
+      logger.log('URL de la petición:', `${this.API_URL}/api/v1/clientes`);
+      
+      const response = await this.fetchWithRetry(`${this.API_URL}/api/v1/clientes`, {
+        method: 'POST',
+        headers: await this.getHeaders(),
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error al crear cliente: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      logger.error('Error en create:', error);
+      throw error;
     }
+  }
 
-    return response.json();
-  },
-
-  update: async (id: number, data: UpdateClienteDto): Promise<Cliente> => {
-    console.log('URL de la petición:', `${API_URL}/api/v1/clientes/${id}`);
-    const response = await fetchWithRetry(`${API_URL}/api/v1/clientes/${id}`, {
-      method: 'PATCH',
-      headers: await getHeaders(),
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Error al actualizar el cliente');
+  async update(id: number, data: UpdateClienteDto): Promise<Cliente> {
+    try {
+      logger.log('URL de la petición:', `${this.API_URL}/api/v1/clientes/${id}`);
+      
+      const response = await this.fetchWithRetry(`${this.API_URL}/api/v1/clientes/${id}`, {
+        method: 'PATCH',
+        headers: await this.getHeaders(),
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error al actualizar cliente: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      logger.error('Error en update:', error);
+      throw error;
     }
+  }
 
-    return response.json();
-  },
-
-  delete: async (id: number): Promise<void> => {
-    console.log('URL de la petición:', `${API_URL}/api/v1/clientes/${id}`);
-    const response = await fetchWithRetry(`${API_URL}/api/v1/clientes/${id}`, {
-      method: 'DELETE',
-      headers: await getHeaders(),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Error al eliminar el cliente');
+  async delete(id: number): Promise<void> {
+    try {
+      logger.log('URL de la petición:', `${this.API_URL}/api/v1/clientes/${id}`);
+      
+      const response = await this.fetchWithRetry(`${this.API_URL}/api/v1/clientes/${id}`, {
+        method: 'DELETE',
+        headers: await this.getHeaders(),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error al eliminar cliente: ${response.status}`);
+      }
+    } catch (error) {
+      logger.error('Error en delete:', error);
+      throw error;
     }
-  },
-}; 
+  }
+}
+
+export const clientesService = new ClientesService(); 

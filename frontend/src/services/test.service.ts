@@ -1,4 +1,5 @@
 import { getSession } from 'next-auth/react';
+import { logger } from '@/lib/logger';
 
 class TestService {
   private apiUrl: string;
@@ -23,7 +24,7 @@ class TestService {
         const retryAfter = response.headers.get('retry-after');
         const delayMs = retryAfter ? parseInt(retryAfter) * 1000 : delay;
         
-        console.log(`Rate limited. Retrying after ${delayMs}ms. Retries left: ${retries-1}`);
+        logger.log(`Rate limited. Retrying after ${delayMs}ms. Retries left: ${retries-1}`);
         await this.wait(delayMs);
         return this.fetchWithRetry(url, options, retries - 1, delay * 1.5); // Exponential backoff
       }
@@ -31,7 +32,7 @@ class TestService {
       return response;
     } catch (error) {
       if (retries > 0) {
-        console.log(`Network error. Retrying after ${delay}ms. Retries left: ${retries-1}`);
+        logger.log(`Network error. Retrying after ${delay}ms. Retries left: ${retries-1}`);
         await this.wait(delay);
         return this.fetchWithRetry(url, options, retries - 1, delay * 1.5); // Exponential backoff
       }
@@ -47,10 +48,10 @@ class TestService {
     };
   }
 
-  async checkServerConnection(): Promise<boolean> {
+  async checkConnection(): Promise<any> {
     try {
-      console.log('Checking server connection...');
-      console.log('URL:', this.apiUrl);
+      logger.log('Checking server connection...');
+      logger.log('URL:', this.apiUrl);
 
       const startTime = Date.now();
       const response = await this.fetchWithRetry(`${this.apiUrl}/api/health`, {
@@ -61,21 +62,58 @@ class TestService {
       });
       const endTime = Date.now();
 
-      console.log('Server responded in', endTime - startTime, 'ms');
-      console.log('Status:', response.status);
-      console.log('Status Text:', response.statusText);
+      logger.log('Server responded in', endTime - startTime, 'ms');
+      logger.log('Status:', response.status);
+      logger.log('Status Text:', response.statusText);
 
       if (!response.ok) {
-        console.error('Server connection failed:', response.statusText);
+        throw new Error(`Server connection failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      logger.log('Response:', data);
+
+      return {
+        success: true,
+        message: 'Conexión exitosa',
+        data,
+        responseTime: endTime - startTime
+      };
+    } catch (error) {
+      logger.error('Server connection error:', error);
+      throw error;
+    }
+  }
+
+  async checkServerConnection(): Promise<boolean> {
+    try {
+      logger.log('Checking server connection...');
+      logger.log('URL:', this.apiUrl);
+
+      const startTime = Date.now();
+      const response = await this.fetchWithRetry(`${this.apiUrl}/api/health`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const endTime = Date.now();
+
+      logger.log('Server responded in', endTime - startTime, 'ms');
+      logger.log('Status:', response.status);
+      logger.log('Status Text:', response.statusText);
+
+      if (!response.ok) {
+        logger.error('Server connection failed:', response.statusText);
         return false;
       }
 
       const data = await response.json();
-      console.log('Response:', data);
+      logger.log('Response:', data);
 
       return true;
     } catch (error) {
-      console.error('Server connection error:', error);
+      logger.error('Server connection error:', error);
       return false;
     }
   }
@@ -86,11 +124,11 @@ class TestService {
     data?: any;
   }> {
     try {
-      console.log('Testing auth endpoint...');
-      console.log('URL:', `${this.apiUrl}/api/v1/auth/profile`);
+      logger.log('Testing auth endpoint...');
+      logger.log('URL:', `${this.apiUrl}/api/v1/auth/profile`);
 
       const headers = await this.getHeaders();
-      console.log('Headers:', headers);
+      logger.log('Headers:', headers);
 
       const startTime = Date.now();
       const response = await this.fetchWithRetry(
@@ -102,12 +140,12 @@ class TestService {
       );
       const endTime = Date.now();
 
-      console.log('Auth endpoint responded in', endTime - startTime, 'ms');
-      console.log('Status:', response.status);
-      console.log('Status Text:', response.statusText);
+      logger.log('Auth endpoint responded in', endTime - startTime, 'ms');
+      logger.log('Status:', response.status);
+      logger.log('Status Text:', response.statusText);
 
       if (!response.ok) {
-        console.error('Auth endpoint test failed:', response.statusText);
+        logger.error('Auth endpoint test failed:', response.statusText);
         return {
           success: false,
           message: `Error en la respuesta: ${response.statusText}`,
@@ -115,7 +153,7 @@ class TestService {
       }
 
       const data = await response.json();
-      console.log('Response:', data);
+      logger.log('Response:', data);
 
       return {
         success: true,
@@ -123,7 +161,7 @@ class TestService {
         data,
       };
     } catch (error) {
-      console.error('Auth endpoint test error:', error);
+      logger.error('Auth endpoint test error:', error);
       return {
         success: false,
         message: `Error en la comunicación con el servidor: ${error}`,

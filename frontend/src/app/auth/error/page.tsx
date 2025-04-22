@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 
-export default function AuthErrorPage() {
+function AuthErrorContent() {
+  const { useEffect } = require('react');
+  const { useRouter, useSearchParams } = require('next/navigation');
+  
   const router = useRouter();
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
@@ -45,5 +47,13 @@ export default function AuthErrorPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthErrorPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Cargando...</div>}>
+      <AuthErrorContent />
+    </Suspense>
   );
 } 
