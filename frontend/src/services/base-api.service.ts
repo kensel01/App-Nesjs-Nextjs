@@ -13,8 +13,8 @@ interface CustomSession {
 
 export class BaseApiService {
   protected API_URL: string;
-  protected MAX_RETRIES = 3;
-  protected RETRY_DELAY = 1000;
+  protected readonly MAX_RETRIES = 3;
+  protected readonly RETRY_DELAY = 1000; // milliseconds
 
   constructor(apiUrl?: string) {
     this.API_URL = apiUrl || process.env.NEXT_PUBLIC_API_URL || '';
@@ -26,16 +26,19 @@ export class BaseApiService {
   // Obtener headers con autorización
   protected async getHeaders(): Promise<HeadersInit> {
     const session = await getSession();
-    logger.log('Session in getHeaders:', session ? 'Session exists' : 'No session');
+    // Reducimos logging de sesión en cada petición
+    // logger.log('Session in getHeaders:', session ? 'Session exists' : 'No session');
     
     // Obtener el token de accessToken dentro del objeto user
     const token = session?.user?.accessToken;
     
     if (!token) {
       logger.warn('No token available in session');
-    } else {
-      logger.log('Token available for request');
     }
+    // Eliminamos log redundante
+    // else {
+    //   logger.log('Token available for request');
+    // }
     
     return {
       'Content-Type': 'application/json',
@@ -61,18 +64,19 @@ export class BaseApiService {
     delay = this.RETRY_DELAY
   ): Promise<Response> {
     try {
-      logger.log(`Making request to: ${url}`);
+      // Reducimos logging de URL en cada petición
+      // logger.log(`Making request to: ${url}`);
       
-      // Log de las cabeceras para debugging
-      if (options.headers) {
-        const hasAuth = (options.headers as any)['Authorization'] ? 'Yes' : 'No';
-        logger.log(`Request headers - Auth present: ${hasAuth}`);
-      }
+      // Eliminamos logging de cabeceras en cada petición
+      // if (options.headers) {
+      //   const hasAuth = (options.headers as any)['Authorization'] ? 'Yes' : 'No';
+      //   logger.log(`Request headers - Auth present: ${hasAuth}`);
+      // }
       
       const response = await fetch(url, options);
       
-      // Log de la respuesta para debugging
-      logger.log(`Response status: ${response.status}`);
+      // Eliminamos logging de estado en cada petición
+      // logger.log(`Response status: ${response.status}`);
       
       // Si hay un error de autorización, podemos intentar refrescar el token en futuras versiones
       if (response.status === 401) {

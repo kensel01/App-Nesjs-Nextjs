@@ -23,7 +23,8 @@ export const dashboardService = {
     while (retries >= 0) {
       try {
         const url = `${API_URL}/api/v1/dashboard`;
-        logger.log('Obteniendo datos del dashboard:', url);
+        // Reducimos logging innecesario
+        // logger.log('Obteniendo datos del dashboard:', url);
 
         const response = await fetch(url, {
           headers: await getHeaders(),
@@ -46,7 +47,8 @@ export const dashboardService = {
         }
 
         const data = await response.json();
-        logger.log('Datos del dashboard recibidos correctamente');
+        // Reducimos logging innecesario
+        // logger.log('Datos del dashboard recibidos correctamente');
         return data;
       } catch (error) {
         // Si ya no tenemos más reintentos, propagar el error

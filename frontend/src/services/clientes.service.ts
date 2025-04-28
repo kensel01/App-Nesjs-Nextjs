@@ -78,8 +78,6 @@ class ClientesService extends BaseApiService {
 
   async getById(id: number): Promise<Cliente> {
     try {
-      logger.log('URL de la petición:', `${this.API_URL}/api/v1/clientes/${id}`);
-      
       const response = await this.fetchWithRetry(`${this.API_URL}/api/v1/clientes/${id}`, {
         headers: await this.getHeaders(),
       });
@@ -97,8 +95,6 @@ class ClientesService extends BaseApiService {
 
   async create(data: CreateClienteDto): Promise<Cliente> {
     try {
-      logger.log('URL de la petición:', `${this.API_URL}/api/v1/clientes`);
-      
       const response = await this.fetchWithRetry(`${this.API_URL}/api/v1/clientes`, {
         method: 'POST',
         headers: await this.getHeaders(),

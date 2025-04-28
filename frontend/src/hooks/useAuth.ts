@@ -14,9 +14,6 @@ export function useAuth() {
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  console.log('useAuth - Current session:', session);
-  console.log('useAuth - Session status:', status);
-
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
@@ -29,8 +26,6 @@ export function useAuth() {
         ...credentials,
         redirect: false,
       });
-
-      console.log('Login result:', result);
 
       if (result?.error) {
         toast.error(result.error);

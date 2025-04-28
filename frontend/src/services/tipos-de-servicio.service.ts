@@ -42,7 +42,6 @@ export const tiposDeServicioService = {
       });
 
       const url = `${API_URL}/api/v1/tipos-de-servicio?${queryParams}`;
-      console.log('URL de la petición:', url);
 
       const response = await fetch(url, {
         headers: await getHeaders(),
@@ -54,7 +53,6 @@ export const tiposDeServicioService = {
       }
 
       const data = await response.json();
-      console.log('Respuesta del servidor:', data);
 
       if (!data) {
         return {

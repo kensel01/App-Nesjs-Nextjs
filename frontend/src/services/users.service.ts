@@ -114,8 +114,6 @@ export const usersService = {
   },
 
   create: async (data: CreateUserDTO): Promise<User> => {
-    logger.log('URL de la petición:', `${API_URL}/api/v1/users`);
-    
     const userData = {
       email: data.email,
       password: data.password,
@@ -123,10 +121,7 @@ export const usersService = {
       role: data.role
     };
     
-    logger.log('Datos enviados al servidor:', userData);
-
     const headers = await getHeaders();
-    logger.log('Headers:', headers);
 
     try {
       const response = await fetch(`${API_URL}/api/v1/users`, {
