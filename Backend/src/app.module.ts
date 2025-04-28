@@ -8,16 +8,19 @@ import { ConfigModule } from '@nestjs/config';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    ThrottlerModule.forRoot([{
-      ttl: 60000, // tiempo en milisegundos (1 minuto)
-      limit: 100, // número máximo de peticiones en ese periodo (aumentado de 10 a 100)
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // tiempo en milisegundos (1 minuto)
+        limit: 300, // número máximo de peticiones en ese periodo (aumentado de 100 a 300)
+      },
+    ]),
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.POSTGRES_HOST,
@@ -42,6 +45,7 @@ import { APP_GUARD } from '@nestjs/core';
     UsersModule,
     AuthModule,
     DashboardModule,
+    PaymentsModule,
   ],
   controllers: [],
   providers: [

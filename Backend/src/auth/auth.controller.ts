@@ -14,41 +14,38 @@ import { UserActiveInterface } from 'src/common/interfaces/user-active.interface
 import { AuthThrottle } from './decorators/auth-throttler.decorator';
 import { Throttle } from '@nestjs/throttler';
 
-interface RequestWithUser extends Request{
-    user:{
-        email: string;
-        role: string;
-    }
+interface RequestWithUser extends Request {
+  user: {
+    email: string;
+    role: string;
+  };
 }
 @Controller('auth')
 export class AuthController {
+  constructor(private readonly authService: AuthService) {}
 
-    constructor(private readonly authService: AuthService){}
+  @Post('register')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  register(
+    @Body()
+    registerDto: RegisterDto,
+  ) {
+    console.log(registerDto);
+    return this.authService.register(registerDto);
+  }
 
+  @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  login(
+    @Body()
+    loginDto: LoginDto,
+  ) {
+    return this.authService.login(loginDto);
+  }
 
-    @Post('register')
-    @Throttle({ default: { limit: 5, ttl: 60000 } })
-    register(
-        @Body()
-        registerDto:RegisterDto,
-        
-    ){  
-        console.log(registerDto)
-        return this.authService.register(registerDto);
-    }
-        
-    @Post('login')
-    @Throttle({ default: { limit: 5, ttl: 60000 } })
-    login(
-        @Body()
-        loginDto:LoginDto,
-    ){
-        return this.authService.login(loginDto);
-    }
-
-    @Get ('profile')
-    @Auth(Role.USER)
-    profile(@ActiveUser() user: UserActiveInterface){
-        return this.authService.profile(user);
-    }
+  @Get('profile')
+  @Auth(Role.USER)
+  profile(@ActiveUser() user: UserActiveInterface) {
+    return this.authService.profile(user);
+  }
 }

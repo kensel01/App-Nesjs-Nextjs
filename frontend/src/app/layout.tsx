@@ -1,10 +1,9 @@
 "use client";
 
 import { Inter } from 'next/font/google';
-import { SessionProvider } from 'next-auth/react';
-import { ThemeProvider } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
+import { Providers } from '@/providers';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -17,17 +16,10 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={cn(inter.className, 'min-h-screen bg-background')}>
-        <SessionProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-            <Toaster />
-          </ThemeProvider>
-        </SessionProvider>
+        <Providers>
+          {children}
+          <Toaster />
+        </Providers>
       </body>
     </html>
   );

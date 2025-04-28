@@ -12,11 +12,13 @@ import { APP_GUARD } from '@nestjs/core';
 @Module({
   imports: [
     forwardRef(() => UsersModule),
-    ThrottlerModule.forRoot([{
-      name: 'auth',
-      ttl: 60000, // 1 minuto
-      limit: 5,   // 5 intentos por minuto
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        name: 'auth',
+        ttl: 60000, // 1 minuto
+        limit: 5, // 5 intentos por minuto
+      },
+    ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -25,8 +27,8 @@ import { APP_GUARD } from '@nestjs/core';
           expiresIn: '1d',
         },
       }),
-      inject: [ConfigService]
-    })
+      inject: [ConfigService],
+    }),
   ],
   controllers: [AuthController, PasswordController],
   providers: [AuthService],

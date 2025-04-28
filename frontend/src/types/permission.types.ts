@@ -1,6 +1,6 @@
 import { Role } from './user.types';
 
-export type Resource = 'users' | 'clients' | 'service-types' | 'dashboard' | 'profile';
+export type Resource = 'users' | 'clients' | 'service-types' | 'dashboard' | 'profile' | 'payments';
 export type Action = 'create' | 'read' | 'update' | 'delete';
 
 export interface Permission {
@@ -37,6 +37,12 @@ export const PERMISSIONS: Permission[] = [
   { resource: 'service-types', action: 'read', roles: [Role.ADMIN, Role.USER, Role.TECNICO] },
   { resource: 'service-types', action: 'update', roles: [Role.ADMIN] },
   { resource: 'service-types', action: 'delete', roles: [Role.ADMIN] },
+  
+  // Pagos
+  { resource: 'payments', action: 'create', roles: [Role.ADMIN, Role.USER] },
+  { resource: 'payments', action: 'read', roles: [Role.ADMIN, Role.USER, Role.TECNICO] },
+  { resource: 'payments', action: 'update', roles: [Role.ADMIN] },
+  { resource: 'payments', action: 'delete', roles: [Role.ADMIN] },
   
   // Perfil personal
   { resource: 'profile', action: 'read', roles: [Role.ADMIN, Role.USER, Role.TECNICO] },

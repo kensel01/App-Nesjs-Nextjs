@@ -1,48 +1,38 @@
-import express from 'express';
-import nodemailer from 'nodemailer';
+const express = require('express');
+const path = require('path');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static('.'));
+const PORT = process.env.PORT || 3000;
 
-app.post('/process.php', async (req, res) => {
-  const { nombre, email, direccion, mensaje } = req.body;
-  
-  // Configure email transport (you would need to set up proper email credentials)
-  const transporter = nodemailer.createTransport({
-    host: "smtp.example.com",
-    port: 587,
-    secure: false,
-    auth: {
-      user: "your-email@example.com",
-      pass: "your-password"
-    }
-  });
-
-  try {
-    await transporter.sendMail({
-      from: email,
-      to: "contacto@nodocero.cl",
-      subject: "Nuevo mensaje de contacto - Nodo Cero",
-      text: `
-        Nombre: ${nombre}
-        Email: ${email}
-        Dirección: ${direccion}
-        
-        Mensaje:
-        ${mensaje}
-      `
-    });
-
-    res.redirect('/?mensaje=enviado');
-  } catch (error) {
-    console.error('Error sending email:', error);
-    res.redirect('/?mensaje=error');
+// Proxy API requests to the backend
+app.use('/api', createProxyMiddleware({ 
+  target: 'http://localhost:3001', // NestJS backend port
+  pathRewrite: {
+    '^/api': '', // Remove /api prefix when forwarding to backend
+  },
+  changeOrigin: true,
+  // Enhanced logging for debugging
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(`Proxying request to: ${req.method} ${proxyReq.path}`);
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    console.log(`Received response from backend: ${proxyRes.statusCode}`);
+  },
+  onError: (err, req, res) => {
+    console.error('Proxy error:', err);
+    res.status(500).send('Proxy error: Unable to connect to backend');
   }
+}));
+
+// Serve static files
+app.use(express.static(path.join(__dirname, 'dist')));
+
+// Handle SPA routing by sending all non-API requests to index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

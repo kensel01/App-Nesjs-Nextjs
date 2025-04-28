@@ -16,6 +16,7 @@ import {
   ArrowDownIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  CreditCardIcon,
 } from '@heroicons/react/24/outline';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useSidebarStore } from '@/store/sidebar';
@@ -115,6 +116,12 @@ export default function Sidebar({
       label: 'Tipos de Servicio',
       icon: WrenchScrewdriverIcon,
       show: check('service-types', 'read'),
+    },
+    {
+      href: '/dashboard/pagos',
+      label: 'Pagos',
+      icon: CreditCardIcon,
+      show: check('payments', 'read'),
     },
     {
       href: '/dashboard/profile',

@@ -32,7 +32,10 @@ export class PasswordController {
     console.log(`Password reset token for ${email}: ${token}`);
     // Simulate sending email with the reset link
     // For simulation, we simply log the token
-    return { message: 'Si el correo está registrado, recibirás un enlace para restablecer la contraseña.' };
+    return {
+      message:
+        'Si el correo está registrado, recibirás un enlace para restablecer la contraseña.',
+    };
   }
 
   // Endpoint to reset the password using the token
@@ -41,8 +44,10 @@ export class PasswordController {
   async resetPassword(@Body() body: ResetPasswordDto) {
     const { token, newPassword } = body;
     // Simulate token verification and password update
-    console.log(`Reset password requested with token: ${token} and newPassword: ${newPassword}`);
+    console.log(
+      `Reset password requested with token: ${token} and newPassword: ${newPassword}`,
+    );
     // In production, verify token validity and update the user password in the database
     return { message: 'La contraseña ha sido restablecida exitosamente.' };
   }
-} 
+}

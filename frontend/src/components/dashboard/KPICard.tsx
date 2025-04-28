@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { KPICard as KPICardType } from '@/types/dashboard.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowUpIcon, ArrowDownIcon, MinusIcon } from '@heroicons/react/24/solid';
@@ -8,7 +9,7 @@ interface KPICardProps extends KPICardType {
   className?: string;
 }
 
-export function KPICard({
+function KPICardComponent({
   title,
   value,
   trend,
@@ -63,4 +64,6 @@ export function KPICard({
       </CardContent>
     </Card>
   );
-} 
+}
+
+export const KPICard = memo(KPICardComponent); 

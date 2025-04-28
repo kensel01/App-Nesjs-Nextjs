@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import TiposDeServicioTable from '@/components/tipos-de-servicio/TiposDeServicioTable';
@@ -21,7 +21,9 @@ export default function TiposDeServicioPage() {
   const [sortBy, setSortBy] = useState<keyof TipoDeServicio>('name');
   const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('ASC');
   const [searchQuery, setSearchQuery] = useState('');
-
+  const hasLoaded = useRef(false);
+  const lastSearch = useRef('');
+  
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
@@ -40,18 +42,29 @@ export default function TiposDeServicioPage() {
       });
       setTiposDeServicio(response.tiposDeServicio);
       setTotal(response.total);
+      lastSearch.current = searchQuery;
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Error al cargar tipos de servicio');
     } finally {
       setIsLoading(false);
+      hasLoaded.current = true;
     }
   };
 
   useEffect(() => {
-    if (status === 'authenticated') {
+    if (status === 'authenticated' && 
+        (!hasLoaded.current || 
+         lastSearch.current !== searchQuery)) {
       loadTiposDeServicio();
     }
-  }, [page, sortBy, sortOrder, searchQuery, status]);
+  }, [page, sortBy, sortOrder, searchQuery]);
+
+  // Separate effect to handle initial load
+  useEffect(() => {
+    if (status === 'authenticated' && !hasLoaded.current) {
+      loadTiposDeServicio();
+    }
+  }, [status]);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);

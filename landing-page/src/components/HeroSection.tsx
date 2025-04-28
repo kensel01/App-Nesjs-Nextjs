@@ -1,5 +1,17 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Network } from 'lucide-react';
+
+// Import the StatusCheckForm lazily
+const StatusCheckForm = lazy(() => import('./StatusCheckForm'));
+
+// Loader component for suspense
+const FormLoader = () => (
+  <div className="bg-white shadow-xl rounded-xl p-6 animate-pulse">
+    <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+    <div className="h-10 bg-gray-200 rounded mb-4"></div>
+    <div className="h-10 bg-gray-200 rounded"></div>
+  </div>
+);
 
 const HeroSection = () => {
   return (
@@ -20,23 +32,18 @@ const HeroSection = () => {
               Somos pioneros en soluciones tecnológicas integrales, llevando internet de alta velocidad y servicios digitales avanzados a cada rincón del norte chileno.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <button className="bg-emerald-500 text-black px-8 py-4 rounded-full font-semibold hover:bg-emerald-400 transition flex items-center justify-center">
+              <a href="#consulta" className="bg-emerald-500 text-black px-8 py-4 rounded-full font-semibold hover:bg-emerald-400 transition flex items-center justify-center">
                 <Network className="w-5 h-5 mr-2" />
-                Verificar Cobertura
-              </button>
-              <button className="bg-white/10 text-white px-8 py-4 rounded-full font-semibold hover:bg-white/20 transition">
-                Conoce Nuestros Planes
-              </button>
+                Consultar Estado
+              </a>
+              <a href="#planes" className="bg-white/10 text-white px-8 py-4 rounded-full font-semibold hover:bg-white/20 transition">
+                Ver Planes
+              </a>
             </div>
           </div>
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-emerald-500/10 rounded-2xl transform rotate-3"></div>
-            <img 
-              src="https://images.unsplash.com/photo-1614064641938-3bbee52942c7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
-              alt="Tecnología y conectividad"
-              className="rounded-2xl shadow-2xl relative z-10"
-            />
-          </div>
+          <Suspense fallback={<FormLoader />}>
+            <StatusCheckForm />
+          </Suspense>
         </div>
 
         {/* Stats Section */}

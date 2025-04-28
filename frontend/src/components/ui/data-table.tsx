@@ -139,16 +139,10 @@ export function DataTable<T extends object, IdType extends React.Key = number>({
     }
   }, [onDelete, canDelete]);
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-48">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  // Render mobile view (cards)
-  const renderMobileView = useCallback(() => {
+  // Memoize the rendered view based on device type
+  const mobileView = useMemo(() => {
+    if (!isMobile) return null;
+    
     return (
       <div className="space-y-4">
         {data.length === 0 ? (
@@ -203,7 +197,11 @@ export function DataTable<T extends object, IdType extends React.Key = number>({
                   {columns.slice(1).map((column) => (
                     <div key={String(column.key)} className="py-1">
                       <div className="text-sm text-muted-foreground">{column.label}</div>
-                      <div>{String(item[column.key] || '-')}</div>
+                      <div>
+                        {column.render 
+                          ? column.render(item[column.key], item) 
+                          : String(item[column.key] || '-')}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -213,10 +211,12 @@ export function DataTable<T extends object, IdType extends React.Key = number>({
         )}
       </div>
     );
-  }, [data, columns, getItemId, canUpdate, canDelete, onEdit, handleDelete, loading]);
-
-  // Render desktop view (table)
-  const renderDesktopView = useCallback(() => {
+  }, [data, columns, getItemId, canUpdate, canDelete, onEdit, handleDelete, loading, isMobile]);
+  
+  // Memoize the desktop view
+  const desktopView = useMemo(() => {
+    if (isMobile) return null;
+    
     return (
       <div className="rounded-md border bg-card overflow-x-auto">
         <Table>
@@ -261,7 +261,9 @@ export function DataTable<T extends object, IdType extends React.Key = number>({
                 <TableRow key={getItemId(row)}>
                   {columns.map((column) => (
                     <TableCell key={`${getItemId(row)}-${String(column.key)}`}>
-                      {String(row[column.key] || '-')}
+                      {column.render 
+                        ? column.render(row[column.key], row) 
+                        : String(row[column.key] || '-')}
                     </TableCell>
                   ))}
                   {(canUpdate || canDelete) && (
@@ -299,7 +301,15 @@ export function DataTable<T extends object, IdType extends React.Key = number>({
         </Table>
       </div>
     );
-  }, [data, columns, getItemId, sortBy, sortOrder, handleSort, canUpdate, canDelete, onEdit, loading, handleDelete]);
+  }, [data, columns, getItemId, sortBy, sortOrder, handleSort, canUpdate, canDelete, onEdit, loading, handleDelete, isMobile]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-48">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -341,7 +351,8 @@ export function DataTable<T extends object, IdType extends React.Key = number>({
         />
       )}
 
-      {isMobile ? renderMobileView() : renderDesktopView()}
+      {mobileView}
+      {desktopView}
 
       {/* Paginación */}
       {totalPages > 1 && (

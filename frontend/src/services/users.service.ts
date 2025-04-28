@@ -2,6 +2,7 @@
 
 import { User, CreateUserDTO, UpdateUserDTO } from '@/types/user.types';
 import { getSession } from 'next-auth/react';
+import { logger } from '@/lib/logger';
 
 interface GetUsersParams {
   page?: number;
@@ -50,7 +51,7 @@ export const usersService = {
       });
 
       const url = `${API_URL}/api/v1/users?${queryParams}`;
-      console.log('URL de la petición:', url);
+      logger.log('URL de la petición:', url);
 
       const response = await fetch(url, {
         headers: await getHeaders(),
@@ -62,7 +63,7 @@ export const usersService = {
       }
 
       const data = await response.json();
-      console.log('Respuesta del servidor:', data);
+      logger.log('Respuesta del servidor:', data);
 
       if (!data) {
         return {
@@ -94,7 +95,7 @@ export const usersService = {
 
       throw new Error('Formato de respuesta inválido');
     } catch (error) {
-      console.error('Error en getUsers:', error);
+      logger.error('Error en getUsers:', error);
       throw error;
     }
   },
@@ -113,7 +114,7 @@ export const usersService = {
   },
 
   create: async (data: CreateUserDTO): Promise<User> => {
-    console.log('URL de la petición:', `${API_URL}/api/v1/users`);
+    logger.log('URL de la petición:', `${API_URL}/api/v1/users`);
     
     const userData = {
       email: data.email,
@@ -122,10 +123,10 @@ export const usersService = {
       role: data.role
     };
     
-    console.log('Datos enviados al servidor:', userData);
+    logger.log('Datos enviados al servidor:', userData);
 
     const headers = await getHeaders();
-    console.log('Headers:', headers);
+    logger.log('Headers:', headers);
 
     try {
       const response = await fetch(`${API_URL}/api/v1/users`, {
@@ -137,7 +138,7 @@ export const usersService = {
       const responseData = await response.json();
       
       if (!response.ok) {
-        console.error('Error response:', responseData);
+        logger.error('Error response:', responseData);
         if (Array.isArray(responseData.message)) {
           throw new Error(responseData.message.join(', '));
         }
@@ -146,7 +147,7 @@ export const usersService = {
 
       return responseData;
     } catch (error) {
-      console.error('Error completo:', error);
+      logger.error('Error completo:', error);
       throw error;
     }
   },
@@ -181,7 +182,7 @@ export const usersService = {
 
       return response.json();
     } catch (error) {
-      console.error('Error en updateProfile:', error);
+      logger.error('Error en updateProfile:', error);
       throw error;
     }
   },
@@ -212,7 +213,7 @@ export const usersService = {
 
       return response.json();
     } catch (error) {
-      console.error('Error al cambiar el estado del usuario:', error);
+      logger.error('Error al cambiar el estado del usuario:', error);
       throw error;
     }
   },

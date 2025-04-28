@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { ServiceDistribution } from '@/types/dashboard.types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
@@ -9,7 +10,7 @@ interface ServiceDistributionChartProps {
   className?: string;
 }
 
-export function ServiceDistributionChart({ data, className = '' }: ServiceDistributionChartProps) {
+function ServiceDistributionChartComponent({ data, className = '' }: ServiceDistributionChartProps) {
   return (
     <Card className={className}>
       <CardHeader>
@@ -43,4 +44,6 @@ export function ServiceDistributionChart({ data, className = '' }: ServiceDistri
       </CardContent>
     </Card>
   );
-} 
+}
+
+export const ServiceDistributionChart = memo(ServiceDistributionChartComponent); 

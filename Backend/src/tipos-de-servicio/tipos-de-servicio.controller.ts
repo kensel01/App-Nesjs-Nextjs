@@ -1,15 +1,25 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { Role } from 'src/common/enums/rol.enum';
 import { CreateTipoDeServicioDto } from './dto/create-tipo-de-servicio.dto';
 import { UpdateTipoDeServicioDto } from './dto/update-tipo-de-servicio.dto';
 import { TiposDeServicioService } from './tipos-de-servicio.service';
-
+import { Throttle } from '@nestjs/throttler';
 
 @Auth(Role.ADMIN)
 @Controller('tipos-de-servicio')
 export class TiposDeServicioController {
-  constructor(private readonly tiposDeServicioService: TiposDeServicioService) {}
+  constructor(
+    private readonly tiposDeServicioService: TiposDeServicioService,
+  ) {}
 
   @Post()
   create(@Body() createTipoDeServicioDto: CreateTipoDeServicioDto) {
@@ -17,6 +27,7 @@ export class TiposDeServicioController {
   }
 
   @Get()
+  @Throttle({ default: { limit: 50, ttl: 60000 } }) // 50 requests per minute for this endpoint
   findAll() {
     return this.tiposDeServicioService.findAll();
   }
@@ -27,7 +38,10 @@ export class TiposDeServicioController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: number, @Body() updateTipoDeServicioDto: UpdateTipoDeServicioDto) {
+  update(
+    @Param('id') id: number,
+    @Body() updateTipoDeServicioDto: UpdateTipoDeServicioDto,
+  ) {
     return this.tiposDeServicioService.update(id, updateTipoDeServicioDto);
   }
 
@@ -35,4 +49,4 @@ export class TiposDeServicioController {
   remove(@Param('id') id: number) {
     return this.tiposDeServicioService.remove(id);
   }
-} 
+}

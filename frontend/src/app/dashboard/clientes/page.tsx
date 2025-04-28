@@ -4,24 +4,43 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import ClientesTable from '@/components/clientes/ClientesTable';
-import { clientesService } from '@/services/clientes.service';
 import { Cliente } from '@/types/cliente.types';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
+import { useClientes } from '@/hooks/useClientes';
+import { useSearchParams } from 'next/navigation';
+import { useQueryState } from 'nuqs';
 
 export default function ClientesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [limit] = useState(10);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<keyof Cliente>('name');
-  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('ASC');
-  const [searchQuery, setSearchQuery] = useState('');
+  const searchParams = useSearchParams();
+  
+  // Use nuqs for URL-synchronized state
+  const [page, setPage] = useQueryState('page', { defaultValue: '1' });
+  const [searchQuery, setSearchQuery] = useQueryState('q', { defaultValue: '' });
+  const [sortBy, setSortBy] = useQueryState('sortBy', { defaultValue: 'name' });
+  const [sortOrder, setSortOrder] = useQueryState('sortOrder', { defaultValue: 'ASC' });
+  
+  const pageNumber = parseInt(page, 10);
+  const limit = 10;
   const [isMobile, setIsMobile] = useState(false);
+
+  // Usar el hook de React Query para clientes
+  const { 
+    clientes, 
+    total, 
+    isLoading, 
+    error: clientesError,
+    deleteCliente,
+    isDeleting
+  } = useClientes({
+    page: pageNumber,
+    limit,
+    search: searchQuery,
+    sortBy: sortBy as keyof Cliente,
+    sortOrder: sortOrder as 'ASC' | 'DESC',
+  });
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -40,47 +59,22 @@ export default function ClientesPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const loadClientes = async () => {
-    try {
-      setIsLoading(true);
-      const response = await clientesService.getClientes({
-        page,
-        limit,
-        search: searchQuery,
-        sortBy,
-        sortOrder,
-      });
-      setClientes(response.clientes);
-      setTotal(response.total);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Error al cargar clientes');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (status === 'authenticated') {
-      loadClientes();
-    }
-  }, [page, sortBy, sortOrder, searchQuery, status]);
-
   const handlePageChange = (newPage: number) => {
-    setPage(newPage);
+    setPage(newPage.toString());
   };
 
   const handleSort = (field: keyof Cliente) => {
     if (field === sortBy) {
       setSortOrder(sortOrder === 'ASC' ? 'DESC' : 'ASC');
     } else {
-      setSortBy(field);
+      setSortBy(field as string);
       setSortOrder('ASC');
     }
   };
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    setPage(1);
+    setPage('1');
   };
 
   const handleFilter = (filters: any[]) => {
@@ -92,13 +86,8 @@ export default function ClientesPage() {
     if (!confirm('¿Estás seguro de que deseas eliminar este cliente?')) {
       return;
     }
-
-    try {
-      await clientesService.delete(id);
-      loadClientes();
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Error al eliminar cliente');
-    }
+    
+    deleteCliente(id);
   };
 
   const handleEdit = (cliente: Cliente) => {
@@ -130,26 +119,26 @@ export default function ClientesPage() {
         </Button>
       </div>
 
-      {error && (
+      {clientesError && (
         <div className="bg-red-50 p-3 sm:p-4 rounded-lg text-sm">
-          <p className="text-red-700">{error}</p>
+          <p className="text-red-700">{(clientesError as Error).message}</p>
         </div>
       )}
 
       <ClientesTable
         clientes={clientes}
         total={total}
-        page={page}
+        page={pageNumber}
         limit={limit}
         onPageChange={handlePageChange}
         onDelete={handleDelete}
         onEdit={handleEdit}
         onSort={handleSort}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
+        sortBy={sortBy as keyof Cliente}
+        sortOrder={sortOrder as 'ASC' | 'DESC'}
         onSearch={handleSearch}
         onFilter={handleFilter}
-        isLoading={isLoading}
+        isLoading={isLoading || isDeleting}
       />
     </div>
   );

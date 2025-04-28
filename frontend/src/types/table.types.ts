@@ -7,7 +7,7 @@ export interface Column<T> {
   render?: (value: any, item: T) => React.ReactNode;
 }
 
-export interface TableProps<T> {
+export interface TableProps<T, IdType = number> {
   data: T[];
   columns: Column<T>[];
   total: number;
@@ -20,7 +20,7 @@ export interface TableProps<T> {
   onPageChange: (page: number) => void;
   onSort?: (field: keyof T) => void;
   onSearch?: (query: string) => void;
-  onEdit?: (item: T) => void;
-  onDelete?: (id: number) => Promise<void>;
-  getItemId: (item: T) => number;
+  onEdit?: (id: IdType) => void;
+  onDelete?: (id: IdType) => Promise<void>;
+  getItemId: (item: T) => IdType;
 } 

@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -28,7 +32,7 @@ export class UsersService {
     if (createUserDto.password) {
       createUserDto.password = await bcryptjs.hash(createUserDto.password, 10);
     }
-    
+
     return await this.userRepository.save(createUserDto);
   }
 
@@ -70,18 +74,18 @@ export class UsersService {
       // Si el término de búsqueda coincide con algún rol, agregamos la búsqueda por rol
       const upperSearch = search.toUpperCase();
       const roles = Object.values(Role);
-      const matchingRoles = roles.filter(role => 
-        role.toUpperCase().includes(upperSearch)
+      const matchingRoles = roles.filter((role) =>
+        role.toUpperCase().includes(upperSearch),
       );
 
       if (matchingRoles.length > 0) {
-        const roleConditions = matchingRoles.map(role => {
+        const roleConditions = matchingRoles.map((role) => {
           if (isActive !== undefined) {
             return { role, isActive };
           }
           return { role };
         });
-        
+
         where = [...where, ...roleConditions];
       }
     }
@@ -93,7 +97,15 @@ export class UsersService {
       },
       skip,
       take: limit,
-      select: ['id', 'name', 'email', 'role', 'isActive', 'createdAt', 'updatedAt'],
+      select: [
+        'id',
+        'name',
+        'email',
+        'role',
+        'isActive',
+        'createdAt',
+        'updatedAt',
+      ],
     });
 
     return {
@@ -107,7 +119,15 @@ export class UsersService {
   async findOne(id: number) {
     return await this.userRepository.findOne({
       where: { id },
-      select: ['id', 'name', 'email', 'role', 'isActive', 'createdAt', 'updatedAt'],
+      select: [
+        'id',
+        'name',
+        'email',
+        'role',
+        'isActive',
+        'createdAt',
+        'updatedAt',
+      ],
     });
   }
 
@@ -127,13 +147,13 @@ export class UsersService {
     if (updateUserDto.password) {
       updateUserDto.password = await bcryptjs.hash(updateUserDto.password, 10);
     }
-    
+
     const user = await this.findOne(id);
-    
+
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
-    
+
     await this.userRepository.update(id, updateUserDto);
     return this.findOne(id);
   }
@@ -149,31 +169,34 @@ export class UsersService {
   async updateProfile(email: string, updateUserDto: UpdateUserDto) {
     try {
       const user = await this.findOneEmail(email);
-      
+
       if (!user) {
         throw new NotFoundException('Usuario no encontrado');
       }
-      
+
       // No permitir cambiar el rol desde este endpoint
       delete updateUserDto.role;
-      
+
       // No permitir cambiar el estado de activación desde este endpoint
       delete updateUserDto.isActive;
-      
+
       // Si se está actualizando la contraseña, hay que encriptarla
       if (updateUserDto.password) {
-        updateUserDto.password = await bcryptjs.hash(updateUserDto.password, 10);
+        updateUserDto.password = await bcryptjs.hash(
+          updateUserDto.password,
+          10,
+        );
       }
-      
+
       // No permitir cambiar el email desde este endpoint para evitar problemas de seguridad
       delete updateUserDto.email;
-      
+
       await this.userRepository.update(user.id, updateUserDto);
-      
+
       return {
         success: true,
         message: 'Perfil actualizado exitosamente',
-        user: await this.findOne(user.id)
+        user: await this.findOne(user.id),
       };
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -185,19 +208,19 @@ export class UsersService {
 
   async toggleUserStatus(id: number) {
     const user = await this.findOne(id);
-    
+
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
-    
+
     const newStatus = !user.isActive;
-    
+
     await this.userRepository.update(id, { isActive: newStatus });
-    
+
     return {
       success: true,
       message: `Usuario ${newStatus ? 'activado' : 'desactivado'} exitosamente`,
-      user: await this.findOne(id)
+      user: await this.findOne(id),
     };
   }
 }

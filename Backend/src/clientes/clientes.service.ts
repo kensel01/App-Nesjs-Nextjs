@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateClienteDto } from './dto/create-cliente.dto';
@@ -6,6 +10,7 @@ import { UpdateClienteDto } from './dto/update-cliente.dto';
 import { Cliente } from './entities/cliente.entity';
 import { TiposDeServicioService } from '../tipos-de-servicio/tipos-de-servicio.service';
 import { UserActiveInterface } from '../common/interfaces/user-active.interface';
+import { Role } from '../common/enums/rol.enum';
 
 @Injectable()
 export class ClientesService {
@@ -17,14 +22,16 @@ export class ClientesService {
 
   async create(createClienteDto: CreateClienteDto, user: UserActiveInterface) {
     try {
-      const tipoDeServicio = await this.tiposDeServicioService.findOne(createClienteDto.tipoDeServicioId);
+      const tipoDeServicio = await this.tiposDeServicioService.findOne(
+        createClienteDto.tipoDeServicioId,
+      );
       if (!tipoDeServicio) {
         throw new NotFoundException('Tipo de servicio no encontrado');
       }
 
       // Verificar si ya existe un cliente con el mismo RUT
       const existingCliente = await this.clienteRepository.findOne({
-        where: { rut: createClienteDto.rut }
+        where: { rut: createClienteDto.rut },
       });
 
       if (existingCliente) {
@@ -39,7 +46,10 @@ export class ClientesService {
 
       return await this.clienteRepository.save(cliente);
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new BadRequestException('Error al crear el cliente');
@@ -48,6 +58,14 @@ export class ClientesService {
 
   async findAll(user: UserActiveInterface) {
     try {
+      // Si el usuario es administrador, devuelve todos los clientes
+      if (user.role === Role.ADMIN) {
+        return await this.clienteRepository.find({
+          order: { createdAt: 'DESC' },
+        });
+      } 
+      
+      // Para otros roles, filtra por userEmail
       return await this.clienteRepository.find({
         where: { userEmail: user.email },
         order: { createdAt: 'DESC' },
@@ -59,8 +77,17 @@ export class ClientesService {
 
   async findOne(id: number, user: UserActiveInterface) {
     try {
+      let queryOptions = {};
+      
+      // Si no es admin, filtra por userEmail
+      if (user.role !== Role.ADMIN) {
+        queryOptions = { id, userEmail: user.email };
+      } else {
+        queryOptions = { id };
+      }
+      
       const cliente = await this.clienteRepository.findOne({
-        where: { id, userEmail: user.email },
+        where: queryOptions,
       });
 
       if (!cliente) {
@@ -76,12 +103,18 @@ export class ClientesService {
     }
   }
 
-  async update(id: number, updateClienteDto: UpdateClienteDto, user: UserActiveInterface) {
+  async update(
+    id: number,
+    updateClienteDto: UpdateClienteDto,
+    user: UserActiveInterface,
+  ) {
     try {
       const cliente = await this.findOne(id, user);
 
       if (updateClienteDto.tipoDeServicioId) {
-        const tipoDeServicio = await this.tiposDeServicioService.findOne(updateClienteDto.tipoDeServicioId);
+        const tipoDeServicio = await this.tiposDeServicioService.findOne(
+          updateClienteDto.tipoDeServicioId,
+        );
         if (!tipoDeServicio) {
           throw new NotFoundException('Tipo de servicio no encontrado');
         }
@@ -90,7 +123,7 @@ export class ClientesService {
 
       if (updateClienteDto.rut && updateClienteDto.rut !== cliente.rut) {
         const existingCliente = await this.clienteRepository.findOne({
-          where: { rut: updateClienteDto.rut }
+          where: { rut: updateClienteDto.rut },
         });
 
         if (existingCliente) {
@@ -101,7 +134,10 @@ export class ClientesService {
       Object.assign(cliente, updateClienteDto);
       return await this.clienteRepository.save(cliente);
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new BadRequestException('Error al actualizar el cliente');
@@ -120,4 +156,4 @@ export class ClientesService {
       throw new BadRequestException('Error al eliminar el cliente');
     }
   }
-} 
+}

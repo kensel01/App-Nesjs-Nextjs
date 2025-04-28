@@ -1,51 +1,67 @@
-import { Entity, PrimaryGeneratedColumn, Column, DeleteDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  DeleteDateColumn,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+} from 'typeorm';
 import { TipoDeServicio } from '../../tipos-de-servicio/entities/tipo-de-servicio.entity';
 import { User } from '../../users/entities/user.entity';
+import { Payment } from '../../payments/entities/payment.entity';
 
 @Entity()
 export class Cliente {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Column()
-    name: string;
+  @Column()
+  name: string;
 
-    @Column({ unique: true })
-    rut: string;
+  @Column({ unique: true })
+  rut: string;
 
-    @Column()
-    telefono: string;
+  @Column()
+  telefono: string;
 
-    @Column({ nullable: true })
-    email: string;
+  @Column({ nullable: true })
+  email: string;
 
-    @Column()
-    direccion: string;
+  @Column()
+  direccion: string;
 
-    @Column()
-    comuna: string;
+  @Column()
+  comuna: string;
 
-    @Column()
-    ciudad: string;
+  @Column()
+  ciudad: string;
 
-    @DeleteDateColumn()
-    deletedAt: Date;
+  @DeleteDateColumn()
+  deletedAt: Date;
 
-    @ManyToOne(() => TipoDeServicio, (tipoDeServicio) => tipoDeServicio.id, {
-        eager: true,
-    })
-    tipoDeServicio: TipoDeServicio;
+  @ManyToOne(() => TipoDeServicio, (tipoDeServicio) => tipoDeServicio.id, {
+    eager: true,
+  })
+  tipoDeServicio: TipoDeServicio;
 
-    @ManyToOne(() => User)
-    @JoinColumn({ name: 'userEmail', referencedColumnName: 'email' })
-    user: User;
-  
-    @Column()
-    userEmail: string;
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'userEmail', referencedColumnName: 'email' })
+  user: User;
 
-    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-    createdAt: Date;
+  @Column()
+  userEmail: string;
 
-    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
-    updatedAt: Date;
-} 
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: Date;
+
+  @Column({
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt: Date;
+
+  @OneToMany(() => Payment, (payment) => payment.cliente)
+  payments: Payment[];
+}

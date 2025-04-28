@@ -1,6 +1,8 @@
 export interface TipoDeServicio {
   id: number;
   name: string;
+  precio: number;
+  descripcion?: string;
   createdAt?: string;
   updatedAt?: string;
 }

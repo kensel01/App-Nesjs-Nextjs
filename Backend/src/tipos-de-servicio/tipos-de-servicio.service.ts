@@ -13,7 +13,9 @@ export class TiposDeServicioService {
   ) {}
 
   async create(createTipoDeServicioDto: CreateTipoDeServicioDto) {
-    const tipoDeServicio = this.tipoDeServicioRepository.create(createTipoDeServicioDto);
+    const tipoDeServicio = this.tipoDeServicioRepository.create(
+      createTipoDeServicioDto,
+    );
     return await this.tipoDeServicioRepository.save(tipoDeServicio);
   }
 
@@ -22,7 +24,9 @@ export class TiposDeServicioService {
   }
 
   async findOne(id: number) {
-    const tipoDeServicio = await this.tipoDeServicioRepository.findOneBy({ id });
+    const tipoDeServicio = await this.tipoDeServicioRepository.findOneBy({
+      id,
+    });
     if (!tipoDeServicio) {
       throw new NotFoundException('Tipo de servicio not found');
     }
@@ -39,4 +43,4 @@ export class TiposDeServicioService {
     const tipoDeServicio = await this.findOne(id);
     return await this.tipoDeServicioRepository.softRemove(tipoDeServicio);
   }
-} 
+}
