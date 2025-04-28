@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { Loader2, CircleCheck, AlertCircle } from 'lucide-react';
 import { useThrottle } from '../hooks/useThrottle';
 
@@ -10,16 +10,18 @@ interface StatusResponse {
   errorMessage?: string;
 }
 
+// Remove type definitions and use simple event types
+
 const StatusCheckForm = () => {
   const [rut, setRut] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
-  const [result, setResult] = React.useState<StatusResponse | null>(null);
+  const [result, setResult] = React.useState(null as StatusResponse | null);
   
   // Limitar las consultas para evitar abuso (máximo una consulta cada 2 segundos)
   const throttledCheckStatus = useThrottle(checkStatus, 2000);
   
   // Format RUT as user types (12.345.678-9)
-  const handleRutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleRutChange = (e: any) => {
     let value = e.target.value;
     
     // Remove all non-digits and "k"/"K"
@@ -50,7 +52,7 @@ const StatusCheckForm = () => {
     setRut(value);
   };
   
-  async function checkStatus(e: React.FormEvent) {
+  async function checkStatus(e: any) {
     e.preventDefault();
     
     if (!rut) return;
