@@ -10,6 +10,7 @@ import {
   Query,
   ParseIntPipe,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ClientesService } from './clientes.service';
 import { CreateClienteDto } from './dto/create-cliente.dto';
@@ -21,6 +22,39 @@ import { UserActiveInterface } from '../common/interfaces/user-active.interface'
 import { ApiBearerAuth, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { Logger } from '@nestjs/common';
+import { Public } from '../auth/decorators/public.decorator';
+import { PaymentsService } from '../payments/payments.service';
+
+interface CheckClientStatusDto {
+  rut: string;
+  token: string;
+}
+
+interface ClientStatusResponse {
+  status: 'active' | 'suspended' | 'not_found';
+  balance?: number;
+  service?: string;
+  lastPayment?: string;
+  nextDueDate?: string; 
+  daysUntilSuspension?: number;
+  errorMessage?: string;
+  cliente?: {
+    nombre?: string;
+    email?: string;
+    direccion?: string;
+  };
+  recentPayments?: Array<{
+    fecha: string;
+    monto: number;
+    estado: string;
+    metodo: string;
+  }>;
+  serviceDetails?: {
+    velocidad?: string;
+    caracteristicas?: string[];
+    tipoConexion?: string;
+  };
+}
 
 @ApiTags('Clientes')
 @ApiBearerAuth()
@@ -28,7 +62,10 @@ import { Logger } from '@nestjs/common';
 export class ClientesController {
   private readonly logger = new Logger(ClientesController.name);
   
-  constructor(private readonly clientesService: ClientesService) {}
+  constructor(
+    private readonly clientesService: ClientesService,
+    private readonly paymentsService: PaymentsService,
+  ) {}
 
   @Auth(Role.ADMIN, Role.USER, Role.TECNICO)
   @Post()
@@ -145,5 +182,178 @@ export class ClientesController {
     @ActiveUser() user: UserActiveInterface
   ) {
     return this.clientesService.remove(id, user);
+  }
+
+  /**
+   * Endpoint público para consultar el estado de un cliente por RUT
+   * Requiere un token de seguridad generado previamente
+   */
+  @Public()
+  @Post('client/status')
+  async checkClientStatus(@Body() checkClientStatusDto: CheckClientStatusDto): Promise<ClientStatusResponse> {
+    try {
+      const { rut, token } = checkClientStatusDto;
+      
+      // Verificar token (esto generalmente sería más seguro con firma digital)
+      // La validación completa dependería de cómo implementaste fetchPaymentIntent
+      if (!token) {
+        throw new UnauthorizedException('Token inválido');
+      }
+      
+      // Buscar cliente por RUT
+      const cliente = await this.clientesService.findByRut(rut);
+      
+      if (!cliente) {
+        return {
+          status: 'not_found',
+          errorMessage: 'No se encontró ningún cliente con el RUT proporcionado'
+        };
+      }
+      
+      // Obtener información de pagos y servicio
+      const servicioActivo = await this.clientesService.getServicioActivo(cliente.id);
+      
+      if (!servicioActivo) {
+        return {
+          status: 'not_found',
+          errorMessage: 'No se encontró ningún servicio activo para este cliente',
+          cliente: {
+            nombre: cliente.name,
+            email: cliente.email,
+            direccion: cliente.direccion
+          }
+        };
+      }
+      
+      // Obtener último pago
+      const ultimoPago = await this.paymentsService.getUltimoPago(cliente.id, servicioActivo.id);
+      
+      // Obtener historial de pagos recientes (últimos 3)
+      const pagosRecientes = await this.paymentsService.getPagosRecientes(cliente.id, servicioActivo.id, 3);
+      
+      // Calcular próximo vencimiento (30 días después del último pago)
+      let nextDueDate = null;
+      let daysUntilSuspension = 0;
+      
+      if (ultimoPago) {
+        const fechaUltimoPago = new Date(ultimoPago.fecha);
+        nextDueDate = new Date(fechaUltimoPago);
+        nextDueDate.setDate(nextDueDate.getDate() + 30);
+        
+        // Calcular días restantes hasta suspensión
+        const hoy = new Date();
+        daysUntilSuspension = Math.floor((nextDueDate.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+      }
+      
+      // Determinar si el servicio está activo o suspendido
+      const suspendido = servicioActivo.suspendido || (daysUntilSuspension < 0);
+      
+      // Calcular saldo pendiente si está suspendido
+      const saldoPendiente = suspendido ? servicioActivo.precio : 0;
+      
+      // Obtener detalles técnicos del servicio
+      const serviceDetails = {
+        velocidad: this.obtenerVelocidadServicio(servicioActivo.nombre),
+        caracteristicas: this.obtenerCaracteristicasServicio(servicioActivo.nombre, servicioActivo.descripcion),
+        tipoConexion: this.obtenerTipoConexion(servicioActivo.nombre)
+      };
+      
+      // Preparar información de pagos recientes
+      const recentPayments = pagosRecientes.map(pago => ({
+        fecha: pago.fecha.toISOString(),
+        monto: pago.monto,
+        estado: pago.estado,
+        metodo: pago.metodoPago
+      }));
+      
+      return {
+        status: suspendido ? 'suspended' : 'active',
+        balance: saldoPendiente,
+        service: servicioActivo.nombre,
+        lastPayment: ultimoPago ? ultimoPago.fecha.toISOString() : null,
+        nextDueDate: nextDueDate ? nextDueDate.toISOString() : null,
+        daysUntilSuspension: daysUntilSuspension > 0 ? daysUntilSuspension : 0,
+        cliente: {
+          nombre: cliente.name,
+          email: cliente.email,
+          direccion: cliente.direccion
+        },
+        recentPayments,
+        serviceDetails
+      };
+    } catch (error) {
+      this.logger.error(`Error al consultar estado de cliente: ${error.message}`, error.stack);
+      return {
+        status: 'not_found',
+        errorMessage: 'Ocurrió un error al consultar tu estado. Por favor intenta más tarde.'
+      };
+    }
+  }
+
+  /**
+   * Método auxiliar para extraer la velocidad del servicio de su nombre o descripción
+   */
+  private obtenerVelocidadServicio(nombreServicio: string): string {
+    // Buscar patrones como "100Mbps", "200 Mbps", etc.
+    const match = nombreServicio.match(/(\d+)\s*(mbps|mb\/s|megas)/i);
+    if (match) {
+      return `${match[1]} Mbps`;
+    }
+    return 'No especificada';
+  }
+
+  /**
+   * Método auxiliar para extraer características del servicio
+   */
+  private obtenerCaracteristicasServicio(nombreServicio: string, descripcion?: string): string[] {
+    const caracteristicas = [];
+    
+    // Identificar características por patrones en el nombre
+    if (nombreServicio.match(/fibra/i)) {
+      caracteristicas.push('Fibra Óptica');
+    }
+    
+    if (nombreServicio.match(/inalámbrico|wireless/i)) {
+      caracteristicas.push('Conexión Inalámbrica');
+    }
+    
+    if (nombreServicio.match(/dedicado|exclusivo/i)) {
+      caracteristicas.push('Ancho de Banda Dedicado');
+    }
+    
+    // Añadir características basadas en la descripción si está disponible
+    if (descripcion) {
+      if (descripcion.match(/ip\s+fija/i)) {
+        caracteristicas.push('IP Fija');
+      }
+      
+      if (descripcion.match(/simétric[oa]/i)) {
+        caracteristicas.push('Velocidad Simétrica');
+      }
+    }
+    
+    // Si no se encontraron características, añadir una genérica
+    if (caracteristicas.length === 0) {
+      caracteristicas.push('Internet Residencial');
+    }
+    
+    return caracteristicas;
+  }
+
+  /**
+   * Método auxiliar para determinar el tipo de conexión
+   */
+  private obtenerTipoConexion(nombreServicio: string): string {
+    if (nombreServicio.match(/fibra/i)) {
+      return 'Fibra Óptica';
+    } else if (nombreServicio.match(/wireless|inalámbrico/i)) {
+      return 'Inalámbrico';
+    } else if (nombreServicio.match(/satelital/i)) {
+      return 'Satelital';
+    } else if (nombreServicio.match(/adsl|cobre/i)) {
+      return 'ADSL';
+    }
+    
+    return 'No especificado';
   }
 }

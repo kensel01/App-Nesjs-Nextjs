@@ -10,6 +10,7 @@ import {
 import { TipoDeServicio } from '../../tipos-de-servicio/entities/tipo-de-servicio.entity';
 import { User } from '../../users/entities/user.entity';
 import { Payment } from '../../payments/entities/payment.entity';
+import { ClienteServicio } from './cliente-servicio.entity';
 
 @Entity()
 export class Cliente {
@@ -64,4 +65,7 @@ export class Cliente {
 
   @OneToMany(() => Payment, (payment) => payment.cliente)
   payments: Payment[];
+
+  @OneToMany(() => ClienteServicio, (clienteServicio) => clienteServicio.cliente)
+  servicios: ClienteServicio[];
 }

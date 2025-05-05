@@ -1,11 +1,16 @@
-import React, { lazy, Suspense, useState } from 'react';
-import { CircuitBoard, Phone, CreditCard, MessageSquare, CheckCircle2 } from 'lucide-react';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
+import { CircuitBoard, Phone, CreditCard, MessageSquare, CheckCircle2, Search } from 'lucide-react';
 
-// Importaciones de componentes usando lazy loading para mejorar el rendimiento
-const Navigation = lazy(() => import('./components/Navigation'));
+// Import Navigation directly instead of lazy loading it
+import Navigation from './components/Navigation';
+import TestModal from './components/TestModal';
+import SimpleConsultaModal from './components/SimpleConsultaModal';
+
+// Lazy load other components
 const HeroSection = lazy(() => import('./components/HeroSection'));
 const ServicesSection = lazy(() => import('./components/ServicesSection'));
 const PaymentPage = lazy(() => import('./components/PaymentPage'));
+const StatusCheckForm = lazy(() => import('./components/StatusCheckForm'));
 
 // Componente de fallback para Suspense
 const SectionLoader = () => (
@@ -14,8 +19,72 @@ const SectionLoader = () => (
   </div>
 );
 
+// Componente simplificado para el modal de consulta de estado
+const AccountModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4" 
+         onClick={(e) => {
+           // Solo cierra si se hace clic fuera del modal
+           if (e.target === e.currentTarget) onClose();
+         }}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md relative">
+        <div className="bg-emerald-500 text-white py-3 px-4 text-center rounded-t-xl">
+          <h2 className="text-xl font-bold">Consulta de Estado de Servicio</h2>
+        </div>
+        
+        <button 
+          onClick={onClose}
+          className="absolute top-3 right-3 text-white hover:text-gray-200"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        
+        <div className="p-6">
+          <Suspense fallback={<SectionLoader />}>
+            <StatusCheckForm />
+          </Suspense>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
+  const [showAccountModal, setShowAccountModal] = useState(false);
+  
+  // Controlador unificado para mostrar el modal
+  const handleOpenModal = () => {
+    console.log("Abriendo modal de consulta");
+    setShowAccountModal(true);
+  };
+  
+  // Controlador para cerrar el modal
+  const handleCloseModal = () => {
+    console.log("Cerrando modal de consulta");
+    setShowAccountModal(false);
+  };
+
+  // Crear un manejador de eventos personalizado para la comunicación entre componentes
+  useEffect(() => {
+    // Función que maneja el evento personalizado
+    const handleCustomEvent = () => {
+      console.log("Evento personalizado recibido");
+      handleOpenModal();
+    };
+    
+    // Registrar el evento en el documento
+    document.addEventListener('OPEN_CONSULTA_MODAL', handleCustomEvent);
+    
+    // Limpiar el evento al desmontar el componente
+    return () => {
+      document.removeEventListener('OPEN_CONSULTA_MODAL', handleCustomEvent);
+    };
+  }, []);
 
   const renderPage = () => {
     switch (currentPage) {
@@ -32,6 +101,19 @@ function App() {
               <HeroSection />
             </Suspense>
             
+            {/* Botón grande y visible de Consultar Estado de Servicio en la parte superior */}
+            <div className="flex justify-center -mt-16 mb-12 relative z-10">
+              <button
+                type="button"
+                onClick={handleOpenModal}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 px-8 rounded-full shadow-lg flex items-center text-lg transition-all transform hover:scale-105"
+              >
+                <CheckCircle2 className="mr-2 h-6 w-6" />
+                Consultar Estado de Servicio
+              </button>
+            </div>
+            
+            {/* Otros componentes de la página de inicio */}
             {/* About Section */}
             <section className="py-20 px-6">
               <div className="max-w-7xl mx-auto">
@@ -100,6 +182,18 @@ function App() {
             <Suspense fallback={<SectionLoader />}>
               <ServicesSection />
             </Suspense>
+
+            {/* Botón adicional de consulta en medio de la página para mayor visibilidad */}
+            <div className="flex justify-center my-12">
+              <button
+                type="button"
+                onClick={handleOpenModal}
+                className="bg-black hover:bg-gray-800 text-white font-bold py-4 px-8 rounded-full shadow-lg flex items-center text-lg transition-all transform hover:scale-105"
+              >
+                <Search className="mr-2 h-6 w-6" />
+                Consultar mi Estado de Cuenta
+              </button>
+            </div>
 
             {/* Plans Section */}
             <section id="planes" className="py-16 px-6">
@@ -306,8 +400,17 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation - No usa Suspense porque es crítico para la experiencia del usuario */}
-      <Navigation />
+      {/* Navigation con la prop correcta */}
+      <Navigation onOpenModal={handleOpenModal} />
+      
+      {/* Botón flotante siempre visible */}
+      <button
+        onClick={handleOpenModal}
+        className="fixed bottom-6 right-6 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full p-4 shadow-lg z-40 flex items-center"
+      >
+        <Search className="w-5 h-5 mr-2" />
+        <span>Consultar Estado</span>
+      </button>
       
       {/* Navigation pills */}
       <div className="flex justify-center mt-4 mb-6">
@@ -327,7 +430,18 @@ function App() {
         </div>
       </div>
       
+      {/* Test Modal Component */}
+      <div className="fixed bottom-4 left-4 z-30">
+        <TestModal />
+      </div>
+      
+      {/* Nuevo componente de consulta */}
+      <SimpleConsultaModal />
+      
       {renderPage()}
+      
+      {/* Modal de consulta con estado unificado */}
+      <AccountModal isOpen={showAccountModal} onClose={handleCloseModal} />
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12 px-6">

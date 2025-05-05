@@ -4,6 +4,25 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      '/api/client/status': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/client\/status/, '/api/v1/clientes/client/status'),
+      },
+      '/api/payment/intent': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/payment\/intent/, '/api/v1/payments/payment/intent'),
+      },
+      '/api/payments/create': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/payments\/create/, '/api/v1/payments/create'),
+      }
+    },
+  },
   build: {
     rollupOptions: {
       output: {

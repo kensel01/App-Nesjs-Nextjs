@@ -252,5 +252,107 @@ export class PaymentsService {
     }
   }
 
+  /**
+   * Obtiene el último pago registrado para un cliente y servicio específico
+   * @param clienteId ID del cliente
+   * @param servicioId ID del servicio
+   * @returns El último pago o null si no hay pagos
+   */
+  async getUltimoPago(clienteId: number, servicioId: number): Promise<{ 
+    id: number; 
+    fecha: Date; 
+    monto: number; 
+    estado: string;
+  } | null> {
+    try {
+      const pago = await this.paymentsRepository
+        .createQueryBuilder('payment')
+        .where('payment.clienteId = :clienteId', { clienteId })
+        .andWhere('payment.servicioId = :servicioId', { servicioId })
+        .andWhere('payment.status IN (:...estados)', { 
+          estados: ['COMPLETED', 'APPROVED'] 
+        })
+        .orderBy('payment.createdAt', 'DESC')
+        .getOne();
+        
+      if (!pago) {
+        return null;
+      }
+      
+      return {
+        id: pago.id,
+        fecha: pago.createdAt,
+        monto: pago.amount,
+        estado: pago.status
+      };
+      
+    } catch (error) {
+      this.logger.error(`Error obteniendo último pago: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Obtiene una lista de los pagos más recientes para un cliente y servicio específico
+   * @param clienteId ID del cliente
+   * @param servicioId ID del servicio
+   * @param limit Número máximo de pagos a obtener
+   * @returns Lista de pagos recientes
+   */
+  async getPagosRecientes(
+    clienteId: number, 
+    servicioId: number,
+    limit: number = 3
+  ): Promise<Array<{
+    id: number;
+    fecha: Date;
+    monto: number;
+    estado: string;
+    metodoPago: string;
+  }>> {
+    try {
+      this.logger.debug(`Buscando los últimos ${limit} pagos para cliente ${clienteId} y servicio ${servicioId}`);
+      
+      const pagos = await this.paymentsRepository.find({
+        where: { 
+          clienteId, 
+          servicioId 
+        },
+        order: { 
+          processedAt: 'DESC' 
+        },
+        take: limit
+      });
+      
+      // Si no hay pagos, devolver array vacío
+      if (!pagos || pagos.length === 0) {
+        return [];
+      }
+      
+      // Mapear a la estructura esperada
+      return pagos.map(pago => ({
+        id: pago.id,
+        fecha: pago.processedAt,
+        monto: pago.amount,
+        estado: pago.status,
+        metodoPago: this.obtenerMetodoPago(pago)
+      }));
+    } catch (error) {
+      this.logger.error(`Error obteniendo pagos recientes: ${error.message}`, error.stack);
+      return [];
+    }
+  }
+
+  /**
+   * Obtiene una descripción amigable del método de pago
+   * @param pago Objeto Payment
+   * @returns Descripción del método de pago
+   */
+  private obtenerMetodoPago(pago: Payment): string {
+    // En una implementación real, esto podría obtenerse de metadatos del pago
+    // Por ahora usamos un valor predeterminado
+    return 'Tarjeta de crédito/débito';
+  }
+
   // Additional methods for getting payment history, etc. could be added here
 }

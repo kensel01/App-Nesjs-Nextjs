@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prueba de Modal</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #f5f5f5;
+    }
+    .container {
+      text-align: center;
+    }
+    .btn {
+      background-color: #10b981;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 100;
+      transition: all 0.3s ease;
+    }
+    .modal-content {
+      background-color: white;
+      width: 80%;
+      max-width: 500px;
+      margin: 100px auto;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    .close {
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .modal-visible {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Prueba de Modal en Vite</h1>
+    <button id="openModalBtn" class="btn">Abrir Modal</button>
+    <button id="showAlertBtn" class="btn">Mostrar Alerta</button>
+  </div>
+
+  <div id="testModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Modal de Prueba</h2>
+      <p>Este es un modal de prueba para verificar si funcionan correctamente en tu entorno.</p>
+      <p>Si puedes ver este modal, significa que la funcionalidad básica de JavaScript está funcionando correctamente.</p>
+      <button id="closeModalBtn" class="btn">Cerrar Modal</button>
+    </div>
+  </div>
+
+  <script>
+    // Elementos DOM
+    const modal = document.getElementById('testModal');
+    const openBtn = document.getElementById('openModalBtn');
+    const closeBtn = document.getElementById('closeModalBtn');
+    const closeSpan = document.querySelector('.close');
+    const alertBtn = document.getElementById('showAlertBtn');
+
+    // Función para abrir el modal
+    function openModal() {
+      console.log('Abriendo modal...');
+      modal.classList.add('modal-visible');
+      document.body.style.overflow = 'hidden'; // Evita el scroll del body
+    }
+
+    // Función para cerrar el modal
+    function closeModal() {
+      console.log('Cerrando modal...');
+      modal.classList.remove('modal-visible');
+      document.body.style.overflow = 'auto'; // Restaura el scroll
+    }
+
+    // Event listeners
+    openBtn.addEventListener('click', function() {
+      console.log('Botón abrir modal clickeado');
+      openModal();
+    });
+
+    closeBtn.addEventListener('click', closeModal);
+    closeSpan.addEventListener('click', closeModal);
+
+    alertBtn.addEventListener('click', function() {
+      alert('El sistema de alertas funciona correctamente!');
+    });
+
+    // Cerrar modal al hacer clic fuera del contenido
+    window.addEventListener('click', function(event) {
+      if (event.target === modal) {
+        closeModal();
+      }
+    });
+
+    // Log para verificar que el script se ejecuta
+    console.log('Script de modal cargado correctamente');
+  </script>
+</body>
+</html> 

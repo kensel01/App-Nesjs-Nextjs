@@ -6,6 +6,244 @@
     <title>Nodo Cero - Conectividad e Innovación</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Estilos para el modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-header {
+            background-color: #10b981;
+            color: white;
+            padding: 15px 20px;
+            position: relative;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            text-align: center;
+            font-size: 1.25rem;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 24px;
+            color: white;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4b5563;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        .btn-success {
+            background-color: #10b981;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            width: 100%;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-success:hover {
+            background-color: #059669;
+        }
+
+        .result-card {
+            background-color: #f9fafb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .result-label {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .result-value {
+            font-weight: 500;
+        }
+
+        .result-success {
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        .result-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-outline {
+            flex: 1;
+            background-color: white;
+            border: 1px solid #d1d5db;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-outline:hover {
+            background-color: #f3f4f6;
+        }
+
+        .btn-primary {
+            flex: 1;
+            background-color: #10b981;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Botón flotante para consultar estado */
+        .floating-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #10b981;
+            color: white;
+            border: none;
+            border-radius: 9999px;
+            padding: 12px 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            z-index: 50;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        .floating-btn:hover {
+            background-color: #059669;
+            transform: translateY(-2px);
+        }
+
+        .floating-btn svg {
+            margin-right: 8px;
+        }
+
+        /* Botón visible en hero section */
+        .btn-consultar {
+            background-color: #10b981;
+            color: white;
+            border: none;
+            border-radius: 9999px;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-consultar:hover {
+            background-color: #059669;
+        }
+
+        .btn-consultar svg {
+            margin-right: 8px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .flex {
+            display: flex;
+        }
+    </style>
 </head>
 <body>
     <!-- Navegación -->
@@ -20,9 +258,69 @@
                 <a href="#servicios">Servicios</a>
                 <a href="#contacto">Contacto</a>
             </div>
-            <button class="btn-account">Mi Cuenta</button>
+            <button class="btn-account" id="btnMiCuenta">Mi Cuenta</button>
         </div>
     </nav>
+
+    <!-- Modal de consulta de estado -->
+    <div id="consultaModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Área de Cliente - Consulta de Estado</h2>
+                <button class="close-modal" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Formulario de consulta -->
+                <div id="consultaForm">
+                    <div class="form-group">
+                        <label for="rutCliente">Ingrese su RUT</label>
+                        <input type="text" id="rutCliente" class="form-control" placeholder="Ej: 12345678-9">
+                    </div>
+                    <button id="btnConsultar" class="btn-success">Consultar Estado</button>
+                </div>
+
+                <!-- Resultados (inicialmente oculto) -->
+                <div id="resultadoConsulta" class="hidden">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="background-color: #d1fae5; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                            <i data-lucide="check-circle-2" style="color: #10b981; width: 40px; height: 40px;"></i>
+                        </div>
+                        <h3 style="margin-top: 12px; font-size: 1.25rem;">Cliente de Ejemplo</h3>
+                    </div>
+
+                    <div class="result-card">
+                        <div class="result-row">
+                            <span class="result-label">Estado:</span>
+                            <span class="result-value result-success">Activo</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Servicio:</span>
+                            <span class="result-value">Internet Fibra 200Mbps</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Último pago:</span>
+                            <span class="result-value">15/04/2023</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Próximo vencimiento:</span>
+                            <span class="result-value">15/05/2023</span>
+                        </div>
+                    </div>
+
+                    <div class="result-buttons">
+                        <button id="btnNuevaConsulta" class="btn-outline">Nueva Consulta</button>
+                        <button id="btnCerrarResultado" class="btn-primary">Cerrar</button>
+                    </div>
+                </div>
+
+                <!-- Estado de carga (inicialmente oculto) -->
+                <div id="loadingState" class="hidden" style="text-align: center; padding: 40px 0;">
+                    <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #10b981; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <p style="margin-top: 16px; color: #6b7280;">Consultando datos...</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Hero Section -->
     <section id="inicio" class="hero">
@@ -226,7 +524,96 @@
         </div>
     </footer>
 
+    <!-- Script para el modal -->
     <script>
+        // Esperar a que el DOM esté cargado
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elementos del DOM
+            const modal = document.getElementById('consultaModal');
+            const btnMiCuenta = document.getElementById('btnMiCuenta');
+            const closeModal = document.getElementById('closeModal');
+            const consultaForm = document.getElementById('consultaForm');
+            const resultadoConsulta = document.getElementById('resultadoConsulta');
+            const loadingState = document.getElementById('loadingState');
+            const btnConsultar = document.getElementById('btnConsultar');
+            const btnNuevaConsulta = document.getElementById('btnNuevaConsulta');
+            const btnCerrarResultado = document.getElementById('btnCerrarResultado');
+            const rutInput = document.getElementById('rutCliente');
+
+            // Funciones para abrir y cerrar el modal
+            function abrirModal() {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden'; // Evitar scroll
+                console.log('Modal abierto');
+            }
+
+            function cerrarModal() {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto'; // Restaurar scroll
+                console.log('Modal cerrado');
+            }
+
+            // Función para simular consulta
+            function consultarEstado() {
+                // Mostrar estado de carga
+                consultaForm.classList.add('hidden');
+                loadingState.classList.remove('hidden');
+                
+                console.log('Consultando RUT:', rutInput.value);
+                
+                // Simular respuesta del servidor después de 1.5 segundos
+                setTimeout(function() {
+                    loadingState.classList.add('hidden');
+                    resultadoConsulta.classList.remove('hidden');
+                    console.log('Consulta completada');
+                }, 1500);
+            }
+
+            // Función para volver al formulario
+            function nuevaConsulta() {
+                resultadoConsulta.classList.add('hidden');
+                consultaForm.classList.remove('hidden');
+                rutInput.value = '';
+                console.log('Nueva consulta iniciada');
+            }
+
+            // Event listeners
+            btnMiCuenta.addEventListener('click', function() {
+                console.log('Botón Mi Cuenta clickeado');
+                abrirModal();
+            });
+
+            closeModal.addEventListener('click', cerrarModal);
+
+            btnConsultar.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (!rutInput.value) {
+                    alert('Por favor ingrese un RUT');
+                    return;
+                }
+                consultarEstado();
+            });
+
+            btnNuevaConsulta.addEventListener('click', nuevaConsulta);
+            
+            btnCerrarResultado.addEventListener('click', cerrarModal);
+
+            // Cerrar el modal al hacer clic fuera del contenido
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    cerrarModal();
+                }
+            });
+
+            // Iniciar los iconos de Lucide
+            lucide.createIcons();
+            
+            console.log('Scripts del modal cargados correctamente');
+        });
+    </script>
+    
+    <script>
+        // Inicializar todos los iconos de Lucide
         lucide.createIcons();
     </script>
 </body>

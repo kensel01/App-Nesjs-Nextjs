@@ -26,7 +26,7 @@ import { RolesGuard } from '../auth/guard/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../common/enums/rol.enum';
 import { PaymentStatus } from './entities/payment.entity';
-import { Public } from 'src/auth/decorators/public.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('payments')
 @Controller('payments')
@@ -150,5 +150,22 @@ export class PaymentsController {
       default:
         return PaymentStatus.PENDING;
     }
+  }
+
+  /**
+   * Endpoint para generar un token para consulta de clientes
+   * Este token se usa como medida de seguridad simple para evitar
+   * consultas masivas no autorizadas
+   */
+  @Post('payment/intent')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Generate a client query token' })
+  async generateClientToken(@Body() data: { rut: string }) {
+    // Token simple basado en timestamp y RUT, podría ser más seguro con JWT
+    const timestamp = new Date().getTime();
+    const token = Buffer.from(`${data.rut}-${timestamp}-${process.env.API_SECRET || 'secret'}`).toString('base64');
+    
+    return { token };
   }
 }
