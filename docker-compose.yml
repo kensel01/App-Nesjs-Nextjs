@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: always
+    env_file: .env
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_DB: "${POSTGRES_DB}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  backend:
+    build: ./Backend
+    restart: always
+    env_file: .env
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "${POSTGRES_PORT}"
+      DB_USER: "${POSTGRES_USER}"
+      DB_PASS: "${POSTGRES_PASSWORD}"
+      DB_NAME: "${POSTGRES_DB}"
+    depends_on:
+      - postgres
+    networks:
+      - backend
+
+  panel:
+    build: ./frontend
+    restart: always
+    env_file: .env
+    environment:
+      NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL}"
+    depends_on:
+      - backend
+    networks:
+      - backend
+      - proxy
+
+  landing:
+    build: ./landing-page
+    restart: always
+    networks:
+      - proxy
+
+  apache:
+    image: httpd:2.4-alpine
+    restart: always
+    volumes:
+      - ./apache/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
+      - ./apache/ssl:/usr/local/apache2/conf/ssl:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - landing
+      - panel
+      - backend
+    networks:
+      - proxy
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:
+  proxy: 
