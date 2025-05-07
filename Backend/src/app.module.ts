@@ -9,6 +9,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { PaymentsModule } from './payments/payments.module';
+import { InstalacionesModule } from './instalaciones/instalaciones.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { PaymentsModule } from './payments/payments.module';
     AuthModule,
     DashboardModule,
     PaymentsModule,
+    InstalacionesModule,
   ],
   controllers: [],
   providers: [
