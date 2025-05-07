@@ -9,17 +9,17 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { PaymentsModule } from './payments/payments.module';
-import { InstalacionesModule } from './instalaciones/instalaciones.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    // Límite global: 300 peticiones por 1 minuto
     ThrottlerModule.forRoot([
       {
-        ttl: 60000, // tiempo en milisegundos (1 minuto)
-        limit: 300, // número máximo de peticiones en ese periodo (aumentado de 100 a 300)
+        ttl: 60, // tiempo en segundos (1 minuto)
+        limit: 300, // número máximo de peticiones en ese periodo
       },
     ]),
     TypeOrmModule.forRoot({
@@ -47,7 +47,6 @@ import { InstalacionesModule } from './instalaciones/instalaciones.module';
     AuthModule,
     DashboardModule,
     PaymentsModule,
-    InstalacionesModule,
   ],
   controllers: [],
   providers: [

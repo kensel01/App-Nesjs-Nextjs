@@ -52,19 +52,11 @@ export default function TiposDeServicioPage() {
   };
 
   useEffect(() => {
-    if (status === 'authenticated' && 
-        (!hasLoaded.current || 
-         lastSearch.current !== searchQuery)) {
+    if (status === 'authenticated' &&
+        (!hasLoaded.current || lastSearch.current !== searchQuery)) {
       loadTiposDeServicio();
     }
-  }, [page, sortBy, sortOrder, searchQuery]);
-
-  // Separate effect to handle initial load
-  useEffect(() => {
-    if (status === 'authenticated' && !hasLoaded.current) {
-      loadTiposDeServicio();
-    }
-  }, [status]);
+  }, [status, page, sortBy, sortOrder, searchQuery]);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);

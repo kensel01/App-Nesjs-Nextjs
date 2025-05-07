@@ -1,5 +1,6 @@
-import { IsString, IsOptional, IsEmail, IsNotEmpty } from 'class-validator';
+import { IsString, IsOptional, IsEmail, IsNotEmpty, IsDate } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class CreateClienteDto {
   @ApiProperty({ description: 'Nombre completo del cliente' })
@@ -39,6 +40,21 @@ export class CreateClienteDto {
   @IsString()
   @IsNotEmpty()
   ciudad: string;
+
+  @ApiProperty({ description: 'Fecha programada para pagos' })
+  @IsNotEmpty()
+  @Type(() => Date)
+  @IsDate()
+  fechaProgramada: Date;
+
+  @ApiProperty({ 
+    description: 'Notas adicionales sobre el cliente (máximo 300 caracteres)',
+    required: false,
+    maxLength: 300
+  })
+  @IsString()
+  @IsOptional()
+  notas?: string;
 
   @ApiProperty({ description: 'ID del tipo de servicio' })
   @IsNotEmpty()

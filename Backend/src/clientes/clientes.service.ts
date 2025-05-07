@@ -180,42 +180,77 @@ export class ClientesService {
         return null;
       }
       
-      // Buscar con una consulta más flexible que permite diferentes formatos de RUT
-      const cliente = await this.clienteRepository
+      // Buscar con una consulta exacta primero
+      const clienteExacto = await this.clienteRepository
         .createQueryBuilder('cliente')
         .where('LOWER(REPLACE(REPLACE(cliente.rut, \'.\', \'\'), \'-\', \'\')) = :rutNormalizado', { 
           rutNormalizado 
         })
         .getOne();
       
-      // Si no se encuentra exactamente, intentar con un prefijo más amplio
-      if (!cliente && rutNormalizado.length >= 5) {
+      // Si encontramos una coincidencia exacta, la devolvemos inmediatamente
+      if (clienteExacto) {
+        this.logger.debug(`Cliente encontrado con coincidencia exacta de RUT: ${rut}`);
+        return clienteExacto;
+      }
+      
+      // Si no se encuentra exactamente, realizamos búsquedas más flexibles
+      this.logger.debug(`No se encontró RUT exacto. Iniciando búsqueda avanzada para: ${rut}`);
+      
+      // Estrategia 1: Buscar por los primeros dígitos del RUT (sin dígito verificador)
+      if (rutNormalizado.length >= 5) {
         // Obtener los primeros dígitos del RUT (sin dígito verificador)
         const rutPrefix = rutNormalizado.slice(0, -1);
         
-        this.logger.debug(`No se encontró RUT exacto. Buscando con prefijo: ${rutPrefix}`);
-        
-        const clientesPosibles = await this.clienteRepository
+        const clientesPorPrefijo = await this.clienteRepository
           .createQueryBuilder('cliente')
           .where('LOWER(REPLACE(REPLACE(cliente.rut, \'.\', \'\'), \'-\', \'\')) LIKE :rutPrefix', { 
             rutPrefix: `${rutPrefix}%` 
           })
           .getMany();
         
-        if (clientesPosibles.length === 1) {
-          // Si hay una única coincidencia, retornarla
-          return clientesPosibles[0];
-        } else if (clientesPosibles.length > 1) {
+        if (clientesPorPrefijo.length === 1) {
+          this.logger.debug(`Cliente encontrado con prefijo de RUT: ${rutPrefix}`);
+          return clientesPorPrefijo[0];
+        } else if (clientesPorPrefijo.length > 1) {
           // Si hay múltiples coincidencias, priorizar la más reciente
-          this.logger.debug(`Se encontraron ${clientesPosibles.length} coincidencias parciales para el RUT`);
+          this.logger.debug(`Se encontraron ${clientesPorPrefijo.length} coincidencias parciales para el RUT`);
           // Ordenar por fecha de creación (más reciente primero)
-          return clientesPosibles.sort((a, b) => 
+          return clientesPorPrefijo.sort((a, b) => 
             b.createdAt.getTime() - a.createdAt.getTime()
           )[0];
         }
       }
+      
+      // Estrategia 2: Búsqueda más flexible sin dígito verificador ni formateo
+      // Útil cuando el RUT está en diferentes formatos o tiene un dígito verificador incorrecto
+      // pero los números principales son correctos
+      if (rutNormalizado.length >= 6) {
+        const rutDigitsOnly = rutNormalizado.replace(/[^0-9]/g, '').slice(0, -1);
         
-      return cliente;
+        if (rutDigitsOnly.length >= 5) {
+          this.logger.debug(`Realizando búsqueda fuzzy por números de RUT: ${rutDigitsOnly}`);
+          
+          const clientesFuzzy = await this.clienteRepository
+            .createQueryBuilder('cliente')
+            .where('LOWER(REPLACE(REPLACE(REPLACE(cliente.rut, \'.\', \'\'), \'-\', \'\'), \'k\', \'\')) LIKE :rutDigits', {
+              rutDigits: `%${rutDigitsOnly}%`
+            })
+            .getMany();
+          
+          if (clientesFuzzy.length >= 1) {
+            this.logger.debug(`Se encontraron ${clientesFuzzy.length} coincidencias fuzzy para el RUT`);
+            // Devolver la coincidencia más reciente
+            return clientesFuzzy.sort((a, b) => 
+              b.createdAt.getTime() - a.createdAt.getTime()
+            )[0];
+          }
+        }
+      }
+        
+      // No se encontró ninguna coincidencia
+      this.logger.debug(`No se encontró ningún cliente con el RUT: ${rut} usando ninguna estrategia de búsqueda`);
+      return null;
     } catch (error) {
       this.logger.error(`Error buscando cliente por RUT: ${error.message}`);
       return null;
@@ -257,6 +292,33 @@ export class ClientesService {
     } catch (error) {
       this.logger.error(`Error obteniendo servicio activo: ${error.message}`);
       return null;
+    }
+  }
+
+  /**
+   * Busca clientes que tengan RUTs con un prefijo similar
+   * @param rutPrefix Prefijo de RUT a buscar
+   * @returns Lista de clientes con RUTs similares
+   */
+  async findClientesConPrefijo(rutPrefix: string): Promise<Cliente[]> {
+    try {
+      if (!rutPrefix || rutPrefix.length < 3) {
+        return [];
+      }
+      
+      const clientes = await this.clienteRepository
+        .createQueryBuilder('cliente')
+        .where('LOWER(REPLACE(REPLACE(cliente.rut, \'.\', \'\'), \'-\', \'\')) LIKE :prefix', { 
+          prefix: `%${rutPrefix}%` 
+        })
+        .orderBy('cliente.createdAt', 'DESC')
+        .take(5) // Limitamos a 5 resultados
+        .getMany();
+      
+      return clientes;
+    } catch (error) {
+      this.logger.error(`Error buscando clientes con prefijo: ${error.message}`);
+      return [];
     }
   }
 }

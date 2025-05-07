@@ -10,6 +10,11 @@ export const clienteFormSchema = z.object({
   direccion: z.string().min(1, 'La dirección es requerida'),
   comuna: z.string().min(1, 'La comuna es requerida'),
   ciudad: z.string().min(1, 'La ciudad es requerida'),
+  fechaProgramada: z.date({
+    required_error: 'La fecha programada es requerida',
+    invalid_type_error: 'El formato de fecha no es válido',
+  }),
+  notas: z.string().max(300, 'Las notas no pueden exceder los 300 caracteres').optional(),
   tipoDeServicioId: z.number({
     required_error: 'El tipo de servicio es requerido',
     invalid_type_error: 'El tipo de servicio debe ser un número',

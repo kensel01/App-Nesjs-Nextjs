@@ -17,6 +17,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   CreditCardIcon,
+  ClipboardDocumentCheckIcon,
 } from '@heroicons/react/24/outline';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useSidebarStore } from '@/store/sidebar';

@@ -12,7 +12,7 @@ import { Role } from 'src/common/enums/rol.enum';
 import { CreateTipoDeServicioDto } from './dto/create-tipo-de-servicio.dto';
 import { UpdateTipoDeServicioDto } from './dto/update-tipo-de-servicio.dto';
 import { TiposDeServicioService } from './tipos-de-servicio.service';
-import { Throttle } from '@nestjs/throttler';
+import { SkipThrottle } from '@nestjs/throttler';
 
 @Auth(Role.ADMIN)
 @Controller('tipos-de-servicio')
@@ -27,7 +27,7 @@ export class TiposDeServicioController {
   }
 
   @Get()
-  @Throttle({ default: { limit: 50, ttl: 60000 } }) // 50 requests per minute for this endpoint
+  @SkipThrottle()
   findAll() {
     return this.tiposDeServicioService.findAll();
   }

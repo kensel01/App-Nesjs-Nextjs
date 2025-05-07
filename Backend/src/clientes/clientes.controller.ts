@@ -38,22 +38,35 @@ interface ClientStatusResponse {
   nextDueDate?: string; 
   daysUntilSuspension?: number;
   errorMessage?: string;
+  rutConsultado?: string;
   cliente?: {
+    id?: number;
     nombre?: string;
     email?: string;
     direccion?: string;
+    telefono?: string;
+    fechaRegistro?: string;
   };
   recentPayments?: Array<{
     fecha: string;
     monto: number;
     estado: string;
     metodo: string;
+    comprobante?: string | null;
   }>;
   serviceDetails?: {
     velocidad?: string;
     caracteristicas?: string[];
     tipoConexion?: string;
   };
+  tendenciaPagos?: {
+    puntualidad: 'alta' | 'media' | 'baja';
+    ultimosMeses: number;
+  } | null;
+  sugerencias?: Array<{
+    rut: string;
+    nombre: string;
+  }>;
 }
 
 @ApiTags('Clientes')
@@ -200,13 +213,22 @@ export class ClientesController {
         throw new UnauthorizedException('Token inválido');
       }
       
-      // Buscar cliente por RUT
-      const cliente = await this.clientesService.findByRut(rut);
+      // Normalizar el RUT antes de buscar (eliminar espacios, etc.)
+      const rutNormalizado = rut.trim();
+      
+      this.logger.debug(`Consultando estado para RUT: ${rutNormalizado}`);
+      
+      // Buscar cliente por RUT con la función mejorada
+      const cliente = await this.clientesService.findByRut(rutNormalizado);
       
       if (!cliente) {
+        // Intentar buscar clientes similares para proporcionar sugerencias
+        const clientesSimilares = await this.buscarClientesSimilares(rutNormalizado);
+        
         return {
           status: 'not_found',
-          errorMessage: 'No se encontró ningún cliente con el RUT proporcionado'
+          errorMessage: 'No se encontró ningún cliente con el RUT proporcionado',
+          sugerencias: clientesSimilares.length > 0 ? clientesSimilares : undefined
         };
       }
       
@@ -228,8 +250,8 @@ export class ClientesController {
       // Obtener último pago
       const ultimoPago = await this.paymentsService.getUltimoPago(cliente.id, servicioActivo.id);
       
-      // Obtener historial de pagos recientes (últimos 3)
-      const pagosRecientes = await this.paymentsService.getPagosRecientes(cliente.id, servicioActivo.id, 3);
+      // Obtener historial de pagos recientes (últimos 5)
+      const pagosRecientes = await this.paymentsService.getPagosRecientes(cliente.id, servicioActivo.id, 5);
       
       // Calcular próximo vencimiento (30 días después del último pago)
       let nextDueDate = null;
@@ -258,13 +280,27 @@ export class ClientesController {
         tipoConexion: this.obtenerTipoConexion(servicioActivo.nombre)
       };
       
+      // Información adicional del cliente
+      const clienteDetails = {
+        id: cliente.id, // Útil para referencia interna
+        nombre: cliente.name,
+        email: cliente.email,
+        direccion: cliente.direccion,
+        telefono: cliente.telefono,
+        fechaRegistro: cliente.createdAt.toISOString().split('T')[0] // Solo la fecha
+      };
+      
       // Preparar información de pagos recientes
       const recentPayments = pagosRecientes.map(pago => ({
         fecha: pago.fecha.toISOString(),
         monto: pago.monto,
         estado: pago.estado,
-        metodo: pago.metodoPago
+        metodo: pago.metodoPago,
+        comprobante: (pago as any).comprobante || null
       }));
+      
+      // Calcular información de tendencia de pagos
+      const tendenciaPagos = this.calcularTendenciaPagos(pagosRecientes);
       
       return {
         status: suspendido ? 'suspended' : 'active',
@@ -273,13 +309,11 @@ export class ClientesController {
         lastPayment: ultimoPago ? ultimoPago.fecha.toISOString() : null,
         nextDueDate: nextDueDate ? nextDueDate.toISOString() : null,
         daysUntilSuspension: daysUntilSuspension > 0 ? daysUntilSuspension : 0,
-        cliente: {
-          nombre: cliente.name,
-          email: cliente.email,
-          direccion: cliente.direccion
-        },
+        cliente: clienteDetails,
         recentPayments,
-        serviceDetails
+        serviceDetails,
+        tendenciaPagos,
+        rutConsultado: rutNormalizado
       };
     } catch (error) {
       this.logger.error(`Error al consultar estado de cliente: ${error.message}`, error.stack);
@@ -288,6 +322,58 @@ export class ClientesController {
         errorMessage: 'Ocurrió un error al consultar tu estado. Por favor intenta más tarde.'
       };
     }
+  }
+
+  /**
+   * Método auxiliar para buscar clientes con RUTs similares
+   * Útil para sugerir alternativas cuando no se encuentra el RUT exacto
+   */
+  private async buscarClientesSimilares(rut: string): Promise<Array<{rut: string, nombre: string}>> {
+    try {
+      // Limpiar el RUT para la búsqueda
+      const rutLimpio = rut.replace(/[^0-9kK]/g, '');
+      
+      if (rutLimpio.length < 4) return [];
+      
+      // Obtener los primeros 4-6 dígitos para buscar coincidencias parciales
+      const rutPrefix = rutLimpio.substring(0, Math.min(6, rutLimpio.length - 1));
+      
+      this.logger.debug(`Buscando clientes similares con prefijo: ${rutPrefix}`);
+      
+      const clientesSimilares = await this.clientesService.findClientesConPrefijo(rutPrefix);
+      
+      // Devolver solo RUT y nombre para evitar exponer datos sensibles
+      return clientesSimilares.map(cliente => ({
+        rut: cliente.rut,
+        nombre: cliente.name
+      })).slice(0, 3); // Limitar a 3 sugerencias
+      
+    } catch (error) {
+      this.logger.error(`Error buscando clientes similares: ${error.message}`);
+      return [];
+    }
+  }
+  
+  /**
+   * Método auxiliar para calcular tendencia y estadísticas básicas de pagos
+   */
+  private calcularTendenciaPagos(pagos: any[]): { 
+    puntualidad: 'alta' | 'media' | 'baja', 
+    ultimosMeses: number 
+  } | null {
+    if (!pagos || pagos.length === 0) return null;
+    
+    // Calcular cuántos pagos son puntuales (no estaban suspendidos)
+    const pagosPuntuales = pagos.filter(p => 
+      p.estado === 'COMPLETED' || p.estado === 'APPROVED'
+    ).length;
+    
+    const ratio = pagosPuntuales / pagos.length;
+    
+    return {
+      puntualidad: ratio > 0.8 ? 'alta' : ratio > 0.5 ? 'media' : 'baja',
+      ultimosMeses: pagos.length
+    };
   }
 
   /**

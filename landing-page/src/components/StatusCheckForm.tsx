@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Loader2, CircleCheck, AlertCircle, ClipboardList, CalendarDays, Clock, Search, User, MapPin, Mail, CreditCard, ChevronRight, RefreshCw, XCircle, Wifi, ChevronDown, ChevronUp, ReceiptText, Zap } from 'lucide-react';
+import React, { useState, useEffect, useRef, FormEvent } from 'react';
+import { Loader2, CircleCheck, AlertCircle, ClipboardList, CalendarDays, Clock, Search, User, MapPin, Mail, CreditCard, ChevronRight, RefreshCw, XCircle, Wifi, ChevronDown, ChevronUp, ReceiptText, Zap, CheckCircle, Info, AlertTriangle } from 'lucide-react';
 import { useThrottle } from '../hooks/useThrottle';
 
 interface StatusResponse {
@@ -10,22 +10,35 @@ interface StatusResponse {
   nextDueDate?: string;
   daysUntilSuspension?: number;
   errorMessage?: string;
+  rutConsultado?: string;
   cliente?: {
+    id?: number;
     nombre?: string;
     email?: string;
     direccion?: string;
+    telefono?: string;
+    fechaRegistro?: string;
   };
   recentPayments?: Array<{
     fecha: string;
     monto: number;
     estado: string;
     metodo: string;
+    comprobante?: string | null;
   }>;
   serviceDetails?: {
     velocidad?: string;
     caracteristicas?: string[];
     tipoConexion?: string;
   };
+  tendenciaPagos?: {
+    puntualidad: 'alta' | 'media' | 'baja';
+    ultimosMeses: number;
+  } | null;
+  sugerencias?: Array<{
+    rut: string;
+    nombre: string;
+  }>;
 }
 
 interface RecentSearch {
@@ -104,6 +117,7 @@ const StatusCheckForm = () => {
   const [validationMessage, setValidationMessage] = useState('');
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const [showRecentSearches, setShowRecentSearches] = useState(false);
+  const [validationState, setValidationState] = useState<'idle' | 'validating' | 'valid' | 'invalid'>('idle');
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
@@ -140,7 +154,7 @@ const StatusCheckForm = () => {
   }, []);
   
   // Función para verificar estado del cliente
-  async function checkStatus(e: React.FormEvent<HTMLFormElement> | null, overrideRut?: string) {
+  async function checkStatus(e: any, overrideRut?: string) {
     if (e) e.preventDefault();
     
     const rutToCheck = overrideRut || rut;
@@ -151,6 +165,7 @@ const StatusCheckForm = () => {
     if (!validarRUT(rutToCheck)) {
       setIsValid(false);
       setValidationMessage('El RUT ingresado no es válido');
+      setValidationState('invalid');
       return;
     }
     
@@ -191,7 +206,7 @@ const StatusCheckForm = () => {
     }
   }
   
-  // Limitar las consultas para evitar abuso (máximo una consulta cada 2 segundos)
+  // Limitar las consultas para evitar abuso
   const throttledCheckStatus = useThrottle(checkStatus, 2000);
   
   // Format RUT as user types
@@ -205,16 +220,24 @@ const StatusCheckForm = () => {
       setShowRecentSearches(true);
     } else {
       setShowRecentSearches(false);
+      setValidationState('idle');
     }
     
-    // Validar RUT mientras se escribe, pero solo mostrar errores si tiene suficiente longitud
+    // Validar RUT mientras se escribe
     if (formattedRut.length > 3) {
-      const isValidRut = validarRUT(formattedRut);
-      setIsValid(isValidRut);
-      setValidationMessage(isValidRut ? '' : 'RUT no válido');
+      setValidationState('validating'); // Mostrar que estamos validando
+      
+      // Retrasar la validación real para proporcionar feedback visual
+      setTimeout(() => {
+        const isValidRut = validarRUT(formattedRut);
+        setIsValid(isValidRut);
+        setValidationMessage(isValidRut ? '' : 'RUT no válido');
+        setValidationState(isValidRut ? 'valid' : 'invalid');
+      }, 400);
     } else {
       setIsValid(true);
       setValidationMessage('');
+      setValidationState('idle');
     }
   };
   
@@ -239,6 +262,8 @@ const StatusCheckForm = () => {
   const selectRecentSearch = (rutValue: string) => {
     setRut(rutValue);
     setShowRecentSearches(false);
+    setValidationState('valid');
+    setIsValid(true);
     checkStatus(null, rutValue);
   };
 
@@ -246,6 +271,7 @@ const StatusCheckForm = () => {
   const clearSearch = () => {
     setRut('');
     setResult(null);
+    setValidationState('idle');
     if (inputRef.current) {
       inputRef.current.focus();
     }
@@ -299,6 +325,49 @@ const StatusCheckForm = () => {
       currency: 'CLP'
     }).format(amount);
   };
+
+  // Función para obtener un indicador de estado basado en días restantes o suspensión
+  const getStatusIndicator = () => {
+    if (!result) return null;
+    
+    if (result.status === 'suspended') {
+      return {
+        color: 'red',
+        icon: <AlertCircle className="h-5 w-5" />,
+        text: 'Servicio suspendido por falta de pago',
+        description: 'Contacta a soporte o realiza un pago para reactivar tu servicio'
+      };
+    } else if (result.status === 'active') {
+      if (result.daysUntilSuspension !== undefined) {
+        if (result.daysUntilSuspension <= 3) {
+          return {
+            color: 'amber',
+            icon: <AlertTriangle className="h-5 w-5" />,
+            text: 'Pago próximo a vencer',
+            description: `Tienes ${result.daysUntilSuspension} días para realizar tu pago`
+          };
+        } else if (result.daysUntilSuspension <= 7) {
+          return {
+            color: 'amber',
+            icon: <Info className="h-5 w-5" />,
+            text: 'Pago pendiente',
+            description: `Tu próximo pago vence en ${result.daysUntilSuspension} días`
+          };
+        } else {
+          return {
+            color: 'green',
+            icon: <CheckCircle className="h-5 w-5" />,
+            text: 'Servicio al día',
+            description: 'Tu servicio está activo y al día con los pagos'
+          };
+        }
+      }
+    }
+    
+    return null;
+  };
+  
+  const statusIndicator = getStatusIndicator();
   
   return (
     <div className="bg-white shadow-xl rounded-xl overflow-hidden">
@@ -308,7 +377,7 @@ const StatusCheckForm = () => {
       </div>
       
       <div className="p-6">
-        <form onSubmit={(e: React.FormEvent<HTMLFormElement>) => throttledCheckStatus(e)} className="mb-6">
+        <form onSubmit={(e) => throttledCheckStatus(e)} className="mb-6">
           <div className="relative">
             <div className="relative flex items-center">
               <span className="absolute left-3 text-gray-400">
@@ -319,13 +388,30 @@ const StatusCheckForm = () => {
                 type="text"
                 value={rut}
                 onChange={handleRutChange}
-                onFocus={() => recentSearches.length > 0 && setShowRecentSearches(true)}
+                onFocus={() => recentSearches.length > 0 && rut.length > 0 && setShowRecentSearches(true)}
                 placeholder="Ingresa tu RUT (ej: 12.345.678-9)"
-                className={`pl-10 pr-10 py-3 border rounded-lg w-full focus:ring-2 focus:outline-none 
-                  ${!isValid ? 'border-red-300 focus:ring-red-100 bg-red-50' : 'border-gray-300 focus:ring-emerald-100 focus:border-emerald-300'}`}
+                className={`pl-10 pr-10 py-3 border rounded-lg w-full focus:ring-2 focus:outline-none transition-all
+                  ${!isValid && validationState === 'invalid' 
+                    ? 'border-red-300 focus:ring-red-100 bg-red-50' 
+                    : validationState === 'valid'
+                      ? 'border-green-300 focus:ring-green-100 bg-green-50'
+                      : validationState === 'validating'
+                        ? 'border-amber-300 focus:ring-amber-100 bg-amber-50'
+                        : 'border-gray-300 focus:ring-emerald-100 focus:border-emerald-300'}`}
                 aria-invalid={!isValid}
                 aria-describedby={!isValid ? "rut-error" : undefined}
               />
+              <span className="absolute right-10 text-gray-400">
+                {validationState === 'validating' && (
+                  <Loader2 size={18} className="animate-spin text-amber-500" />
+                )}
+                {validationState === 'valid' && (
+                  <CheckCircle size={18} className="text-green-500" />
+                )}
+                {validationState === 'invalid' && (
+                  <AlertCircle size={18} className="text-red-500" />
+                )}
+              </span>
               {rut && (
                 <button 
                   type="button" 
@@ -337,28 +423,42 @@ const StatusCheckForm = () => {
               )}
             </div>
             
-            {!isValid && (
+            {!isValid && validationState === 'invalid' && (
               <p id="rut-error" className="mt-2 text-sm text-red-600 flex items-center">
                 <AlertCircle className="h-4 w-4 mr-1" /> {validationMessage}
               </p>
             )}
+
+            {validationState === 'valid' && (
+              <p className="mt-2 text-sm text-green-600 flex items-center">
+                <CheckCircle className="h-4 w-4 mr-1" /> RUT válido
+              </p>
+            )}
             
-            {/* Dropdown para búsquedas recientes */}
+            {/* Dropdown para búsquedas recientes con UI mejorada */}
             {showRecentSearches && recentSearches.length > 0 && (
               <div ref={dropdownRef} className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-                <div className="py-2 px-3 text-xs text-gray-500 border-b">Búsquedas recientes</div>
+                <div className="py-2 px-3 text-xs text-gray-500 border-b flex items-center">
+                  <ClipboardList className="h-3 w-3 mr-1" />
+                  Búsquedas recientes
+                </div>
                 <ul>
                   {recentSearches.map((search: RecentSearch) => (
                     <li 
                       key={search.rut}
                       onClick={() => selectRecentSearch(search.rut)}
-                      className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between"
+                      className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between transition-colors"
                     >
                       <div className="flex items-center">
                         <span className="text-gray-500 mr-2">
                           <User size={16} />
                         </span>
-                        {search.rut}
+                        <div>
+                          <div className="font-medium">{search.rut}</div>
+                          <div className="text-xs text-gray-400">
+                            {new Date(search.timestamp).toLocaleDateString('es-CL')}
+                          </div>
+                        </div>
                       </div>
                       <ChevronRight size={16} className="text-gray-400" />
                     </li>
@@ -370,11 +470,11 @@ const StatusCheckForm = () => {
           
           <button
             type="submit"
-            disabled={isLoading || !isValid || !rut}
-            className={`mt-4 w-full flex items-center justify-center py-3 px-4 bg-emerald-500 text-white rounded-lg transition
-              ${(isLoading || !isValid || !rut) 
-                ? 'opacity-60 cursor-not-allowed' 
-                : 'hover:bg-emerald-600'}`}
+            disabled={isLoading || (validationState === 'invalid') || !rut || validationState === 'validating'}
+            className={`mt-4 w-full flex items-center justify-center py-3 px-4 rounded-lg transition
+              ${(isLoading || validationState === 'invalid' || !rut || validationState === 'validating') 
+                ? 'opacity-60 cursor-not-allowed bg-gray-400 text-white' 
+                : 'bg-emerald-500 text-white hover:bg-emerald-600'}`}
           >
             {isLoading ? (
               <>
@@ -390,8 +490,21 @@ const StatusCheckForm = () => {
           </button>
         </form>
         
+        {/* Indicador de estado */}
+        {result && statusIndicator && (
+          <div className={`mb-4 p-3 rounded-lg flex items-center bg-${statusIndicator.color}-50 border border-${statusIndicator.color}-200 text-${statusIndicator.color}-700`}>
+            <div className={`mr-3 text-${statusIndicator.color}-500`}>
+              {statusIndicator.icon}
+            </div>
+            <div>
+              <h5 className="font-medium">{statusIndicator.text}</h5>
+              <p className="text-sm opacity-75">{statusIndicator.description}</p>
+            </div>
+          </div>
+        )}
+        
         {result && (
-          <div className={`mt-6 rounded-lg overflow-hidden border ${
+          <div className={`mt-4 rounded-lg overflow-hidden border ${
             result.status === 'active' 
               ? 'border-green-200 bg-green-50' 
               : result.status === 'suspended' 
@@ -511,7 +624,7 @@ const StatusCheckForm = () => {
                         <div>
                           <span className="text-xs text-gray-500">Características:</span>
                           <ul className="mt-1 space-y-1">
-                            {result.serviceDetails.caracteristicas.map((caracteristica, index) => (
+                            {result.serviceDetails.caracteristicas.map((caracteristica: string, index: number) => (
                               <li key={index} className="flex items-center">
                                 <Wifi className="h-3 w-3 mr-2 text-emerald-500" />
                                 {caracteristica}
@@ -550,7 +663,13 @@ const StatusCheckForm = () => {
                           <Clock className="h-3 w-3 mr-1" /> 
                           Días Hasta Vencimiento
                         </span>
-                        <span className={`font-medium ${result.daysUntilSuspension < 5 ? 'text-amber-600' : ''}`}>
+                        <span className={`font-medium ${
+                          result.daysUntilSuspension <= 3 
+                            ? 'text-red-600' 
+                            : result.daysUntilSuspension <= 7 
+                              ? 'text-amber-600' 
+                              : ''
+                        }`}>
                           {result.daysUntilSuspension} días
                         </span>
                       </div>
@@ -595,7 +714,7 @@ const StatusCheckForm = () => {
                     
                     {showPaymentHistory && (
                       <div className="space-y-2">
-                        {result.recentPayments.map((pago, index) => (
+                        {result.recentPayments.map((pago: any, index: number) => (
                           <div key={index} className="p-3 bg-white rounded border border-gray-200 flex justify-between items-center">
                             <div>
                               <div className="flex items-center">
@@ -658,6 +777,81 @@ const StatusCheckForm = () => {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {result && result.status === 'not_found' && (
+          <div className="mt-4 p-4 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+            <div className="mb-4 flex items-center">
+              <AlertCircle className="h-6 w-6 text-gray-600 mr-3" />
+              <div>
+                <h4 className="font-bold text-lg">Cliente No Encontrado</h4>
+                <p className="text-sm">{result.errorMessage}</p>
+              </div>
+            </div>
+            
+            {/* Sugerencias de clientes similares */}
+            {result.sugerencias && result.sugerencias.length > 0 && (
+              <div className="mt-4">
+                <h5 className="text-sm font-medium text-gray-700 mb-2">¿Buscabas alguno de estos?</h5>
+                <div className="space-y-2">
+                  {result.sugerencias.map((sugerencia, index) => (
+                    <div 
+                      key={index}
+                      onClick={() => selectRecentSearch(sugerencia.rut)}
+                      className="p-3 bg-white rounded border border-gray-200 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center">
+                        <User className="h-4 w-4 mr-2 text-gray-500" />
+                        <div>
+                          <div className="font-medium">{sugerencia.nombre}</div>
+                          <div className="text-sm text-gray-500">{sugerencia.rut}</div>
+                        </div>
+                      </div>
+                      <ChevronRight size={16} className="text-gray-400" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Información de tendencia de pagos */}
+        {result?.tendenciaPagos && (
+          <div className="mb-4 pb-4 border-b border-gray-200">
+            <h5 className="font-semibold text-gray-700 mb-3">Análisis de Pago</h5>
+            <div className="bg-white p-3 rounded border border-gray-200">
+              <div className="flex items-center">
+                <div className="mr-3">
+                  {result.tendenciaPagos.puntualidad === 'alta' && (
+                    <div className="rounded-full bg-green-100 p-2">
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    </div>
+                  )}
+                  {result.tendenciaPagos.puntualidad === 'media' && (
+                    <div className="rounded-full bg-amber-100 p-2">
+                      <AlertTriangle className="h-5 w-5 text-amber-600" />
+                    </div>
+                  )}
+                  {result.tendenciaPagos.puntualidad === 'baja' && (
+                    <div className="rounded-full bg-red-100 p-2">
+                      <AlertCircle className="h-5 w-5 text-red-600" />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="font-medium">
+                    {result.tendenciaPagos.puntualidad === 'alta' && 'Excelente historial de pago'}
+                    {result.tendenciaPagos.puntualidad === 'media' && 'Historial de pago regular'}
+                    {result.tendenciaPagos.puntualidad === 'baja' && 'Historial de pago con retrasos'}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    Basado en los últimos {result.tendenciaPagos.ultimosMeses} meses
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

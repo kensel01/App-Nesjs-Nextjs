@@ -10,6 +10,16 @@ import { tiposDeServicioService } from '@/services/tipos-de-servicio.service';
 import { TipoDeServicio } from '@/types/cliente.types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { CalendarIcon } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Card,
   CardContent,
@@ -33,6 +43,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { clienteFormSchema } from '@/lib/validations/cliente';
+import { cn } from '@/lib/utils';
 import type { z } from 'zod';
 
 type CreateClienteForm = z.infer<typeof clienteFormSchema>;
@@ -53,6 +64,8 @@ export default function CreateClienteForm() {
       direccion: '',
       comuna: '',
       ciudad: '',
+      fechaProgramada: new Date(),
+      notas: '',
       tipoDeServicioId: undefined,
     },
   });
@@ -221,6 +234,64 @@ export default function CreateClienteForm() {
 
             <FormField
               control={form.control}
+              name="fechaProgramada"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Fecha Programada</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "d 'de' MMMM 'de' yyyy", { locale: es })
+                          ) : (
+                            <span>Selecciona una fecha</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                        locale={es}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="notas"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notas (opcional)</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      {...field} 
+                      placeholder="Notas adicionales sobre el cliente (máximo 300 caracteres)" 
+                      maxLength={300}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="tipoDeServicioId"
               render={({ field }) => (
                 <FormItem>
@@ -257,11 +328,12 @@ export default function CreateClienteForm() {
               )}
             />
 
-            <div className="flex justify-end space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.push('/dashboard/clientes')}
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => router.back()}
+                disabled={isLoading}
               >
                 Cancelar
               </Button>

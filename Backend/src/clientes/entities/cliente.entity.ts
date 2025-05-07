@@ -38,6 +38,12 @@ export class Cliente {
   @Column()
   ciudad: string;
 
+  @Column({ type: 'date', default: () => 'CURRENT_DATE' })
+  fechaProgramada: Date;
+  
+  @Column({ type: 'varchar', length: 300, nullable: true })
+  notas: string;
+
   @DeleteDateColumn()
   deletedAt: Date;
 

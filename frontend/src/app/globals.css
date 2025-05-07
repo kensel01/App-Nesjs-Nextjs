@@ -75,3 +75,22 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Calendar styles */
+.rdp {
+  --rdp-cell-size: 40px;
+  --rdp-accent-color: var(--primary);
+  --rdp-background-color: var(--primary);
+  --rdp-accent-color-dark: var(--primary);
+  --rdp-background-color-dark: var(--primary);
+  --rdp-outline: 2px solid var(--focus);
+  --rdp-outline-offset: 2px;
+  margin: 0;
+}
+.rdp-day_selected:hover,
+.rdp-day_selected:focus {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+@import 'react-day-picker/dist/style.css';
