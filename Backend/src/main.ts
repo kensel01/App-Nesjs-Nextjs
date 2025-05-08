@@ -13,7 +13,7 @@ async function bootstrap() {
   // Apply security headers via Helmet
   app.use(helmet());
   app.use(helmet.hsts({ maxAge: 31536000, includeSubDomains: true }));
-  app.disable('x-powered-by');
+  app.getHttpAdapter().getInstance().disable('x-powered-by');
 
   app.setGlobalPrefix('api/v1');
 
