@@ -15,6 +15,7 @@ import { UserActiveInterface } from '../common/interfaces/user-active.interface'
 import { Role } from '../common/enums/rol.enum';
 import { Logger } from '@nestjs/common';
 import { ClienteServicio } from './entities/cliente-servicio.entity';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class ClientesService {
@@ -64,23 +65,48 @@ export class ClientesService {
     }
   }
 
-  async findAll(user: UserActiveInterface) {
-    try {
-      // Si el usuario es administrador, devuelve todos los clientes
-      if (user.role === Role.ADMIN) {
-        return await this.clienteRepository.find({
-          order: { createdAt: 'DESC' },
-        });
-      } 
-      
-      // Para otros roles, filtra por userEmail
-      return await this.clienteRepository.find({
-        where: { userEmail: user.email },
-        order: { createdAt: 'DESC' },
-      });
-    } catch (error) {
-      throw new BadRequestException('Error al obtener los clientes');
+  async findAll(user: UserActiveInterface, paginationDto: PaginationDto) {
+    const { page = 1, limit = 10, search = '', sortBy = 'name', sortOrder = 'ASC' } = paginationDto;
+    const offset = (page - 1) * limit;
+
+    this.logger.log(`Finding clients for user: ${user.email}, role: ${user.role}`);
+    this.logger.log(`Pagination/Search params: page=${page}, limit=${limit}, search=${search}, sortBy=${sortBy}, sortOrder=${sortOrder}`);
+
+    const queryBuilder = this.clienteRepository.createQueryBuilder('cliente')
+      .leftJoinAndSelect('cliente.tipoDeServicio', 'tipoDeServicio');
+
+    if (user.role !== Role.ADMIN) {
+      this.logger.log(`Filtering clients for non-admin user by email: ${user.email}`);
+      queryBuilder.where('cliente.userEmail = :email', { email: user.email });
+    } else {
+      this.logger.log('Admin user detected, fetching all clients.');
     }
+
+    if (search) {
+      this.logger.log(`Applying search term: ${search}`);
+      queryBuilder.andWhere(
+        '(cliente.name ILIKE :search OR cliente.email ILIKE :search OR cliente.telefono ILIKE :search OR cliente.direccion ILIKE :search OR cliente.rut ILIKE :search OR tipoDeServicio.name ILIKE :search)',
+        { search: `%${search}%` }
+      );
+    }
+
+    const validSortColumns: ReadonlyArray<keyof Cliente> = ['id', 'name', 'rut', 'email', 'telefono', 'direccion', 'comuna', 'ciudad', 'fechaProgramada', 'createdAt', 'userEmail'];
+    const defaultSortBy: keyof Cliente = 'name'; 
+    const safeSortBy = validSortColumns.includes(sortBy as keyof Cliente) ? (sortBy as keyof Cliente) : defaultSortBy;
+    const safeSortOrder = sortOrder.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+
+    this.logger.log(`Applying sort: sortBy=${safeSortBy}, sortOrder=${safeSortOrder}`);
+
+    queryBuilder
+      .orderBy(`cliente.${safeSortBy}`, safeSortOrder)
+      .skip(offset)
+      .take(limit);
+
+    const [clientes, total] = await queryBuilder.getManyAndCount();
+
+    this.logger.log(`Found ${clientes.length} clients, total count: ${total}`);
+
+    return { data: clientes, total };
   }
 
   async findOne(id: number, user: UserActiveInterface) {

@@ -123,6 +123,7 @@ export default function Sidebar({
       label: 'Pagos',
       icon: CreditCardIcon,
       show: check('payments', 'read'),
+      disabled: true,
     },
     {
       href: '/dashboard/profile',
@@ -133,7 +134,8 @@ export default function Sidebar({
   ];
 
   // Cerrar sidebar al cambiar de ruta en móviles
-  const handleLinkClick = () => {
+  const handleLinkClick = (disabled?: boolean) => {
+    if (disabled) return;
     if (isMobile) {
       toggle();
     }
@@ -214,7 +216,7 @@ export default function Sidebar({
                       <ul className="pl-8 space-y-1">
                         {link.items?.filter(item => item.show).map((item) => (
                           <li key={item.href}>
-                            <Link href={item.href} onClick={handleLinkClick}>
+                            <Link href={item.href} onClick={() => handleLinkClick()}>
                               <Button
                                 variant="ghost"
                                 className={cn(
@@ -234,13 +236,14 @@ export default function Sidebar({
                     )}
                   </div>
                 ) : (
-                  <Link href={link.href || ''} onClick={handleLinkClick}>
+                  link.disabled ? (
                     <Button
                       variant="ghost"
                       className={cn(
-                        'w-full justify-start gap-2 py-6 text-base',
-                        pathname === link.href && 'bg-gray-100 dark:bg-gray-800'
+                        'w-full justify-start gap-2 py-6 text-base opacity-50 cursor-not-allowed',
                       )}
+                      disabled
+                      title={`${link.label} (Próximamente)`}
                     >
                       <link.icon className="h-5 w-5 flex-shrink-0" />
                       <span
@@ -252,7 +255,27 @@ export default function Sidebar({
                         {link.label}
                       </span>
                     </Button>
-                  </Link>
+                  ) : (
+                    <Link href={link.href || ''} onClick={() => handleLinkClick(link.disabled)}>
+                      <Button
+                        variant="ghost"
+                        className={cn(
+                          'w-full justify-start gap-2 py-6 text-base',
+                          pathname === link.href && 'bg-gray-100 dark:bg-gray-800'
+                        )}
+                      >
+                        <link.icon className="h-5 w-5 flex-shrink-0" />
+                        <span
+                          className={cn(
+                            'transition-opacity whitespace-nowrap',
+                            (isOpen || isMobile) ? 'opacity-100' : 'opacity-0'
+                          )}
+                        >
+                          {link.label}
+                        </span>
+                      </Button>
+                    </Link>
+                  )
                 )}
               </li>
             ))}

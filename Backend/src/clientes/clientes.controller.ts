@@ -104,65 +104,11 @@ export class ClientesController {
       this.logger.debug(`Usuario ${user.email} con rol ${user.role} solicitando lista de clientes`);
       this.logger.debug(`Parámetros de consulta: ${JSON.stringify(paginationDto)}`);
       
-      const clientes = await this.clientesService.findAll(user);
+      const result = await this.clientesService.findAll(user, paginationDto);
       
-      // Aplicar ordenación si se especifica
-      let resultados = [...clientes];
+      this.logger.debug(`Devolviendo ${result.data.length} de ${result.total} resultados`);
       
-      if (paginationDto.sortBy) {
-        this.logger.debug(`Ordenando por ${paginationDto.sortBy} en orden ${paginationDto.sortOrder}`);
-        resultados.sort((a, b) => {
-          const aValue = a[paginationDto.sortBy];
-          const bValue = b[paginationDto.sortBy];
-          
-          if (aValue === undefined || bValue === undefined) {
-            return 0;
-          }
-          
-          // Comparar strings o números
-          const comparison = typeof aValue === 'string'
-            ? aValue.localeCompare(bValue)
-            : aValue - bValue;
-            
-          return paginationDto.sortOrder === 'ASC' ? comparison : -comparison;
-        });
-      }
-      
-      // Aplicar búsqueda si se especifica
-      if (paginationDto.search && paginationDto.search.trim() !== '') {
-        const searchTerm = paginationDto.search.toLowerCase();
-        this.logger.debug(`Filtrando por término: ${searchTerm}`);
-        
-        resultados = resultados.filter(cliente => 
-          cliente.name?.toLowerCase().includes(searchTerm) ||
-          cliente.rut?.toLowerCase().includes(searchTerm) ||
-          cliente.email?.toLowerCase().includes(searchTerm) ||
-          cliente.telefono?.toLowerCase().includes(searchTerm)
-        );
-      }
-      
-      // Aplicar paginación
-      const total = resultados.length;
-      const page = paginationDto.page || 1;
-      const limit = paginationDto.limit || 10;
-      const skip = (page - 1) * limit;
-      
-      // Obtener solo los elementos de la página actual
-      const paginatedResults = resultados.slice(skip, skip + limit);
-      
-      this.logger.debug(`Devolviendo ${paginatedResults.length} de ${total} resultados`);
-      
-      // Devolver en el formato esperado por el frontend
-      return {
-        data: paginatedResults,
-        total: total,
-        meta: {
-          page: page,
-          limit: limit,
-          total: total,
-          totalPages: Math.ceil(total / limit),
-        }
-      };
+      return result;
     } catch (error) {
       this.logger.error(`Error al obtener clientes: ${error.message}`, error.stack);
       throw new BadRequestException(`Error al obtener clientes: ${error.message}`);

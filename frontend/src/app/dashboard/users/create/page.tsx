@@ -29,11 +29,14 @@ import { PagePermissionGuard } from '@/components/auth/PagePermissionGuard';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Role } from '@/types/user.types';
+import { useMutation } from '@tanstack/react-query';
+import { usuariosService } from '@/services/users.service';
+import { CreateUserDTO } from '@/types/user.types';
 
 const createUserSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
   email: z.string().email('Ingrese un correo electrónico válido'),
-  role: z.enum(['admin', 'user'], { 
+  role: z.nativeEnum(Role, {
     errorMap: () => ({ message: 'Seleccione un rol válido' }) 
   }),
   password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
@@ -45,60 +48,59 @@ const createUserSchema = z.object({
 
 type CreateUserForm = z.infer<typeof createUserSchema>;
 
+function getRoleLabel(role: Role): string {
+  switch (role) {
+    case Role.ADMIN: return 'Administrador';
+    case Role.TECNICO: return 'Técnico';
+    case Role.USER: return 'Usuario';
+    default: return role;
+  }
+}
+
 export default function CreateUserPage() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  const createMutation = useMutation(
+    (newUserData: CreateUserDTO) => usuariosService.create(newUserData),
+    {
+      onSuccess: (data) => {
+        toast({
+          title: 'Usuario creado',
+          description: `El usuario ${data.name} ha sido creado exitosamente.`,
+          variant: 'success',
+        });
+        router.push('/dashboard/users');
+      },
+      onError: (error: any) => {
+        console.error('Error al crear usuario:', error);
+        toast({
+          title: 'Error',
+          description: error?.message || 'No se pudo crear el usuario. Inténtelo de nuevo.',
+          variant: 'destructive',
+        });
+      },
+    }
+  );
 
   const form = useForm<CreateUserForm>({
     resolver: zodResolver(createUserSchema),
     defaultValues: {
       name: '',
       email: '',
-      role: 'user',
+      role: Role.USER,
       password: '',
       confirmPassword: '',
     },
   });
 
-  const onSubmit = async (data: CreateUserForm) => {
-    try {
-      setIsSubmitting(true);
-
-      // En un entorno real, esta sería la llamada al API
-      // const response = await fetch('/api/v1/users', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify({
-      //     name: data.name,
-      //     email: data.email,
-      //     role: data.role,
-      //     password: data.password,
-      //   }),
-      // });
-
-      // Simulamos la creación
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      toast({
-        title: 'Usuario creado',
-        description: `El usuario ${data.name} ha sido creado exitosamente.`,
-        variant: 'success',
-      });
-
-      router.push('/dashboard/users');
-    } catch (error) {
-      console.error('Error al crear usuario:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo crear el usuario. Inténtelo de nuevo más tarde.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+  const onSubmit = (data: CreateUserForm) => {
+    createMutation.mutate({
+      name: data.name,
+      email: data.email,
+      role: data.role,
+      password: data.password,
+    });
   };
 
   return (
@@ -159,22 +161,22 @@ export default function CreateUserPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Rol</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Seleccionar rol" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="user">Usuario</SelectItem>
-                          <SelectItem value="admin">Administrador</SelectItem>
+                          {Object.values(Role).map((roleValue) => (
+                            <SelectItem key={roleValue} value={roleValue}>
+                              {getRoleLabel(roleValue)}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Los administradores tienen acceso completo al sistema.
+                        Define los permisos del usuario en el sistema.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -220,8 +222,8 @@ export default function CreateUserPage() {
                   >
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? 'Creando...' : 'Crear Usuario'}
+                  <Button type="submit" disabled={createMutation.isLoading}>
+                    {createMutation.isLoading ? 'Creando...' : 'Crear Usuario'}
                   </Button>
                 </div>
               </form>
