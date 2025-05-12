@@ -1,5 +1,5 @@
+import { BaseApiService } from './base-api.service';
 import { TipoDeServicio, CreateTipoDeServicioDto, UpdateTipoDeServicioDto } from '@/types/cliente.types';
-import { getSession } from 'next-auth/react';
 
 interface GetTiposDeServicioParams {
   page?: number;
@@ -14,133 +14,93 @@ interface GetTiposDeServicioResponse {
   total: number;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-const getHeaders = async () => {
-  const session = await getSession();
-  return {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${session?.user?.accessToken}`,
-  };
-};
-
-export const tiposDeServicioService = {
-  getTiposDeServicio: async ({
-    page = 1,
-    limit = 10,
-    search = '',
-    sortBy = 'name',
-    sortOrder = 'ASC',
-  }: GetTiposDeServicioParams = {}): Promise<GetTiposDeServicioResponse> => {
-    try {
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-        ...(search && { search }),
-        ...(sortBy && { sortBy }),
-        ...(sortOrder && { sortOrder }),
-      });
-
-      const url = `${API_URL}/api/v1/tipos-de-servicio?${queryParams}`;
-
-      const response = await fetch(url, {
-        headers: await getHeaders(),
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || 'Error al obtener los tipos de servicio');
-      }
-
-      const data = await response.json();
-
-      if (!data) {
-        return {
-          tiposDeServicio: [],
-          total: 0,
-        };
-      }
-
-      if (Array.isArray(data)) {
-        return {
-          tiposDeServicio: data,
-          total: data.length,
-        };
-      }
-
-      if (data.data && Array.isArray(data.data)) {
-        return {
-          tiposDeServicio: data.data,
-          total: data.total || data.data.length,
-        };
-      }
-
-      if (data.tiposDeServicio && Array.isArray(data.tiposDeServicio)) {
-        return {
-          tiposDeServicio: data.tiposDeServicio,
-          total: data.total || data.tiposDeServicio.length,
-        };
-      }
-
-      throw new Error('Formato de respuesta inválido');
-    } catch (error) {
-      console.error('Error en getTiposDeServicio:', error);
-      throw error;
+export class TiposDeServicioService extends BaseApiService {
+  async getTiposDeServicio(
+    params: GetTiposDeServicioParams = {}
+  ): Promise<GetTiposDeServicioResponse> {
+    const { page = 1, limit = 10, search = '', sortBy, sortOrder } = params;
+    const filters: Record<string, any> = {};
+    if (search) filters.search = search;
+    if (sortBy) {
+      filters.sortBy = sortBy;
+      filters.sortOrder = sortOrder;
     }
-  },
-
-  getById: async (id: number): Promise<TipoDeServicio> => {
-    const response = await fetch(`${API_URL}/api/v1/tipos-de-servicio/${id}`, {
-      headers: await getHeaders(),
-    });
-
+    const url = `${this.API_URL}/api/v1/tipos-de-servicio?page=${page}&limit=${limit}${this.buildFilterParams(filters)}`;
+    const response = await this.fetchWithRetry(url, { headers: await this.getHeaders() });
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Error al obtener el tipo de servicio');
+      throw new Error(`Error en getTiposDeServicio: ${response.status} ${response.statusText}`);
     }
+    const data = await response.json();
+    let list: TipoDeServicio[] = [];
+    let total: number = 0;
+    if (Array.isArray(data)) {
+      list = data;
+      total = data.length;
+    } else if (data.data && Array.isArray(data.data)) {
+      list = data.data;
+      total = data.total ?? data.data.length;
+    } else if (data.tiposDeServicio && Array.isArray(data.tiposDeServicio)) {
+      list = data.tiposDeServicio;
+      total = data.total ?? data.tiposDeServicio.length;
+    } else {
+      throw new Error('Formato de respuesta inválido en getTiposDeServicio');
+    }
+    return { tiposDeServicio: list, total };
+  }
 
-    return response.json();
-  },
-
-  create: async (data: CreateTipoDeServicioDto): Promise<TipoDeServicio> => {
-    const response = await fetch(`${API_URL}/api/v1/tipos-de-servicio`, {
-      method: 'POST',
-      headers: await getHeaders(),
-      body: JSON.stringify(data),
-    });
-
+  async getById(id: number): Promise<TipoDeServicio> {
+    const response = await this.fetchWithRetry(
+      `${this.API_URL}/api/v1/tipos-de-servicio/${id}`,
+      { headers: await this.getHeaders() }
+    );
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Error al crear el tipo de servicio');
+      throw new Error(`Error en getById: ${response.status}`);
     }
+    return await response.json();
+  }
 
-    return response.json();
-  },
-
-  update: async (id: number, data: UpdateTipoDeServicioDto): Promise<TipoDeServicio> => {
-    const response = await fetch(`${API_URL}/api/v1/tipos-de-servicio/${id}`, {
-      method: 'PATCH',
-      headers: await getHeaders(),
-      body: JSON.stringify(data),
-    });
-
+  async create(data: CreateTipoDeServicioDto): Promise<TipoDeServicio> {
+    const response = await this.fetchWithRetry(
+      `${this.API_URL}/api/v1/tipos-de-servicio`,
+      {
+        method: 'POST',
+        headers: await this.getHeaders(),
+        body: JSON.stringify(data),
+      }
+    );
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Error al actualizar el tipo de servicio');
+      throw new Error(`Error en create: ${response.status}`);
     }
+    return await response.json();
+  }
 
-    return response.json();
-  },
-
-  delete: async (id: number): Promise<void> => {
-    const response = await fetch(`${API_URL}/api/v1/tipos-de-servicio/${id}`, {
-      method: 'DELETE',
-      headers: await getHeaders(),
-    });
-
+  async update(
+    id: number,
+    data: UpdateTipoDeServicioDto
+  ): Promise<TipoDeServicio> {
+    const response = await this.fetchWithRetry(
+      `${this.API_URL}/api/v1/tipos-de-servicio/${id}`,
+      {
+        method: 'PATCH',
+        headers: await this.getHeaders(),
+        body: JSON.stringify(data),
+      }
+    );
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Error al eliminar el tipo de servicio');
+      throw new Error(`Error en update: ${response.status}`);
     }
-  },
-}; 
+    return await response.json();
+  }
+
+  async delete(id: number): Promise<void> {
+    const response = await this.fetchWithRetry(
+      `${this.API_URL}/api/v1/tipos-de-servicio/${id}`,
+      { method: 'DELETE', headers: await this.getHeaders() }
+    );
+    if (!response.ok) {
+      throw new Error(`Error en delete: ${response.status}`);
+    }
+  }
+}
+
+export const tiposDeServicioService = new TiposDeServicioService(); 
