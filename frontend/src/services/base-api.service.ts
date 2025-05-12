@@ -78,23 +78,22 @@ export class BaseApiService {
       // Eliminamos logging de estado en cada petición
       // logger.log(`Response status: ${response.status}`);
       
-      // Si hay un error de autorización, podemos intentar refrescar el token en futuras versiones
       if (response.status === 401) {
         logger.error('Authorization error (401). Token may be invalid or expired.');
       }
       
-      // Si hay rate limiting (429), esperar y reintentar
-      if (response.status === 429 && retries > 0) {
-        const retryAfter = response.headers.get('retry-after');
-        const delayMs = retryAfter ? parseInt(retryAfter) * 1000 : delay;
-        
-        logger.log(`Rate limited. Retrying after ${delayMs}ms. Retries left: ${retries-1}`);
-        await this.wait(delayMs);
-        return this.fetchWithRetry(url, options, retries - 1, delay * 1.5); // Backoff exponencial
+      // Si hay rate limiting (429), no reintentar automáticamente
+      if (response.status === 429) {
+        logger.error('Rate limited (429). Aborting retries.');
+        throw new Error('Too Many Requests');
       }
       
       return response;
-    } catch (error) {
+    } catch (error: any) {
+      // Si es rate limit, no reintentar
+      if (error instanceof Error && error.message === 'Too Many Requests') {
+        throw error;
+      }
       if (retries > 0) {
         logger.log(`Network error. Retrying after ${delay}ms. Retries left: ${retries-1}`);
         await this.wait(delay);

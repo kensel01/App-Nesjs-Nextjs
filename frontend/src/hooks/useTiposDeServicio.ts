@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { tiposDeServicioService } from '@/services/tipos-de-servicio.service';
 import { TipoDeServicio, CreateTipoDeServicioDto, UpdateTipoDeServicioDto } from '@/types/cliente.types';
 
 // Importamos la API de tipos de servicio
@@ -60,64 +61,42 @@ async function deleteTipoDeServicio(id: number) {
   return true;
 }
 
-export function useTiposDeServicio() {
+interface UseTiposDeServicioParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: keyof TipoDeServicio;
+  sortOrder?: 'ASC' | 'DESC';
+}
+
+export function useTiposDeServicio(params: UseTiposDeServicioParams = {}) {
   const queryClient = useQueryClient();
+  const { page = 1, limit = 10, search = '', sortBy, sortOrder } = params;
 
-  const {
-    data: tiposDeServicio = [],
-    isLoading,
-    error,
-    refetch,
-  } = useQuery<TipoDeServicio[]>(['tipos-de-servicio'], fetchTiposDeServicio, {
-    onError: (err: any) => {
-      toast.error(`Error al cargar tipos de servicio: ${err.message}`);
-    },
-  });
+  const { data, isLoading, error } = useQuery(
+    ['tipos-de-servicio', page, limit, search, sortBy, sortOrder],
+    () => tiposDeServicioService.getTiposDeServicio({ page, limit, search, sortBy, sortOrder }),
+    {
+      staleTime: 1000 * 60 * 5, // 5 minutos
+      keepPreviousData: true,
+    }
+  );
 
-  const createMutation = useMutation(createTipoDeServicio, {
-    onSuccess: () => {
-      queryClient.invalidateQueries(['tipos-de-servicio']);
-      toast.success('Tipo de servicio creado correctamente');
-    },
-    onError: (err: any) => {
-      toast.error(`Error al crear tipo de servicio: ${err.message}`);
-    },
-  });
-
-  const updateMutation = useMutation(
-    ({ id, data }: { id: number; data: UpdateTipoDeServicioDto }) =>
-      updateTipoDeServicio(id, data),
+  const deleteMutation = useMutation(
+    (id: number) => tiposDeServicioService.delete(id),
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['tipos-de-servicio']);
-        toast.success('Tipo de servicio actualizado correctamente');
-      },
-      onError: (err: any) => {
-        toast.error(`Error al actualizar tipo de servicio: ${err.message}`);
       },
     }
   );
 
-  const deleteMutation = useMutation(deleteTipoDeServicio, {
-    onSuccess: () => {
-      queryClient.invalidateQueries(['tipos-de-servicio']);
-      toast.success('Tipo de servicio eliminado correctamente');
-    },
-    onError: (err: any) => {
-      toast.error(`Error al eliminar tipo de servicio: ${err.message}`);
-    },
-  });
-
   return {
-    tiposDeServicio,
+    tiposDeServicio: data?.tiposDeServicio || [],
+    total: data?.total || 0,
     isLoading,
     error,
-    refetch,
-    createTipoDeServicio: createMutation.mutate,
-    updateTipoDeServicio: updateMutation.mutate,
-    deleteTipoDeServicio: deleteMutation.mutate,
-    isCreating: createMutation.isLoading,
-    isUpdating: updateMutation.isLoading,
+    deleteTipo: deleteMutation.mutate,
     isDeleting: deleteMutation.isLoading,
   };
 } 

@@ -1,8 +1,5 @@
-'use client';
-
+import { BaseApiService } from './base-api.service';
 import { User, CreateUserDTO, UpdateUserDTO } from '@/types/user.types';
-import { getSession } from 'next-auth/react';
-import { logger } from '@/lib/logger';
 
 interface GetUsersParams {
   page?: number;
@@ -23,193 +20,115 @@ interface UpdateProfileResponse {
   user: User;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-const getHeaders = async () => {
-  const session = await getSession();
-  return {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${session?.user?.accessToken}`,
-  };
-};
-
-export const usersService = {
-  getUsers: async ({
-    page = 1,
-    limit = 10,
-    search = '',
-    sortBy = 'name',
-    sortOrder = 'ASC',
-  }: GetUsersParams = {}): Promise<GetUsersResponse> => {
-    try {
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-        ...(search && { search }),
-        ...(sortBy && { sortBy }),
-        ...(sortOrder && { sortOrder }),
-      });
-
-      const url = `${API_URL}/api/v1/users?${queryParams}`;
-      logger.log('URL de la petición:', url);
-
-      const response = await fetch(url, {
-        headers: await getHeaders(),
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || 'Error al obtener los usuarios');
-      }
-
-      const data = await response.json();
-      logger.log('Respuesta del servidor:', data);
-
-      if (!data) {
-        return {
-          users: [],
-          total: 0,
-        };
-      }
-
-      if (Array.isArray(data)) {
-        return {
-          users: data,
-          total: data.length,
-        };
-      }
-
-      if (data.data && Array.isArray(data.data)) {
-        return {
-          users: data.data,
-          total: data.total || data.data.length,
-        };
-      }
-
-      if (data.users && Array.isArray(data.users)) {
-        return {
-          users: data.users,
-          total: data.total || data.users.length,
-        };
-      }
-
-      throw new Error('Formato de respuesta inválido');
-    } catch (error) {
-      logger.error('Error en getUsers:', error);
-      throw error;
+export class UsuariosService extends BaseApiService {
+  async getUsers(params: GetUsersParams = {}): Promise<GetUsersResponse> {
+    const { page = 1, limit = 10, search = '', sortBy, sortOrder } = params;
+    const filters: Record<string, any> = {};
+    if (search) filters.search = search;
+    if (sortBy) {
+      filters.sortBy = sortBy;
+      filters.sortOrder = sortOrder;
     }
-  },
-
-  getById: async (id: number): Promise<User> => {
-    const response = await fetch(`${API_URL}/api/v1/users/${id}`, {
-      headers: await getHeaders(),
-    });
-
+    const url = `${this.API_URL}/api/v1/users?page=${page}&limit=${limit}${this.buildFilterParams(filters)}`;
+    const response = await this.fetchWithRetry(url, { headers: await this.getHeaders() });
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Error al obtener el usuario');
+      throw new Error(`Error en getUsers: ${response.status} ${response.statusText}`);
     }
+    const data = await response.json();
+    let users: User[] = [];
+    let total: number = 0;
+    if (Array.isArray(data)) {
+      users = data;
+      total = data.length;
+    } else if (data.data && Array.isArray(data.data)) {
+      users = data.data;
+      total = data.total ?? data.data.length;
+    } else if (data.users && Array.isArray(data.users)) {
+      users = data.users;
+      total = data.total ?? data.users.length;
+    } else {
+      throw new Error('Formato de respuesta inválido en getUsers');
+    }
+    return { users, total };
+  }
 
-    return response.json();
-  },
+  async getById(id: number): Promise<User> {
+    const response = await this.fetchWithRetry(
+      `${this.API_URL}/api/v1/users/${id}`,
+      { headers: await this.getHeaders() }
+    );
+    if (!response.ok) {
+      throw new Error(`Error en getById: ${response.status}`);
+    }
+    return await response.json();
+  }
 
-  create: async (data: CreateUserDTO): Promise<User> => {
-    const userData = {
-      email: data.email,
-      password: data.password,
-      name: data.name,
-      role: data.role
-    };
-    
-    const headers = await getHeaders();
-
-    try {
-      const response = await fetch(`${API_URL}/api/v1/users`, {
+  async create(data: CreateUserDTO): Promise<User> {
+    const response = await this.fetchWithRetry(
+      `${this.API_URL}/api/v1/users`,
+      {
         method: 'POST',
-        headers: headers,
-        body: JSON.stringify(userData),
-      });
-
-      const responseData = await response.json();
-      
-      if (!response.ok) {
-        logger.error('Error response:', responseData);
-        if (Array.isArray(responseData.message)) {
-          throw new Error(responseData.message.join(', '));
-        }
-        throw new Error(responseData.message || 'Error al crear el usuario');
-      }
-
-      return responseData;
-    } catch (error) {
-      logger.error('Error completo:', error);
-      throw error;
-    }
-  },
-
-  update: async (id: number, data: UpdateUserDTO): Promise<User> => {
-    const response = await fetch(`${API_URL}/api/v1/users/${id}`, {
-      method: 'PATCH',
-      headers: await getHeaders(),
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Error al actualizar el usuario');
-    }
-
-    return response.json();
-  },
-
-  updateProfile: async (data: UpdateUserDTO): Promise<UpdateProfileResponse> => {
-    try {
-      const response = await fetch(`${API_URL}/api/v1/users/profile/me`, {
-        method: 'PATCH',
-        headers: await getHeaders(),
+        headers: await this.getHeaders(),
         body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || 'Error al actualizar el perfil');
       }
-
-      return response.json();
-    } catch (error) {
-      logger.error('Error en updateProfile:', error);
-      throw error;
-    }
-  },
-
-  delete: async (id: number): Promise<void> => {
-    const response = await fetch(`${API_URL}/api/v1/users/${id}`, {
-      method: 'DELETE',
-      headers: await getHeaders(),
-    });
-
+    );
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'Error al eliminar el usuario');
+      throw new Error(`Error en create: ${response.status}`);
     }
-  },
+    return await response.json();
+  }
 
-  toggleUserStatus: async (id: number): Promise<{ success: boolean; message: string; user: User }> => {
-    try {
-      const response = await fetch(`${API_URL}/api/v1/users/${id}/toggle-status`, {
+  async update(id: number, data: UpdateUserDTO): Promise<User> {
+    const response = await this.fetchWithRetry(
+      `${this.API_URL}/api/v1/users/${id}`,
+      {
         method: 'PATCH',
-        headers: await getHeaders(),
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || 'Error al cambiar el estado del usuario');
+        headers: await this.getHeaders(),
+        body: JSON.stringify(data),
       }
-
-      return response.json();
-    } catch (error) {
-      logger.error('Error al cambiar el estado del usuario:', error);
-      throw error;
+    );
+    if (!response.ok) {
+      throw new Error(`Error en update: ${response.status}`);
     }
-  },
-}; 
+    return await response.json();
+  }
+
+  async delete(id: number): Promise<void> {
+    const response = await this.fetchWithRetry(
+      `${this.API_URL}/api/v1/users/${id}`,
+      { method: 'DELETE', headers: await this.getHeaders() }
+    );
+    if (!response.ok) {
+      throw new Error(`Error en delete: ${response.status}`);
+    }
+  }
+
+  async toggleUserStatus(id: number): Promise<{ success: boolean; message: string; user: User }> {
+    const response = await this.fetchWithRetry(
+      `${this.API_URL}/api/v1/users/${id}/toggle-status`,
+      { method: 'PATCH', headers: await this.getHeaders() }
+    );
+    if (!response.ok) {
+      throw new Error(`Error en toggleUserStatus: ${response.status}`);
+    }
+    return await response.json();
+  }
+
+  async updateProfile(data: UpdateUserDTO): Promise<UpdateProfileResponse> {
+    const response = await this.fetchWithRetry(
+      `${this.API_URL}/api/v1/users/profile/me`,
+      {
+        method: 'PATCH',
+        headers: await this.getHeaders(),
+        body: JSON.stringify(data),
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`Error en updateProfile: ${response.status}`);
+    }
+    return await response.json();
+  }
+}
+
+export const usuariosService = new UsuariosService();
+export const usersService = usuariosService; 
