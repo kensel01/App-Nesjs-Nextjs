@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import ClientesTable from '@/components/clientes/ClientesTable';
@@ -10,6 +10,15 @@ import { Button } from '@/components/ui/button';
 import { useClientes } from '@/hooks/useClientes';
 import { useSearchParams } from 'next/navigation';
 import { useQueryState } from 'nuqs';
+
+// Helper to safely render error messages
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  if (typeof error === 'object' && error !== null && 'message' in error) 
+    return String((error as { message: unknown }).message);
+  return 'Ha ocurrido un error';
+};
 
 export default function ClientesPage() {
   const { data: session, status } = useSession();
@@ -119,11 +128,11 @@ export default function ClientesPage() {
         </Button>
       </div>
 
-      {clientesError && (
+      {clientesError ? (
         <div className="bg-red-50 p-3 sm:p-4 rounded-lg text-sm">
-          <p className="text-red-700">{(clientesError as Error).message}</p>
+          <p className="text-red-700">{getErrorMessage(clientesError)}</p>
         </div>
-      )}
+      ) : null}
 
       <ClientesTable
         clientes={clientes}
