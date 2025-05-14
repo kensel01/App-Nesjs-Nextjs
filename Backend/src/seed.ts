@@ -6,9 +6,20 @@ import { Payment } from './payments/entities/payment.entity';
 import { ClienteServicio } from './clientes/entities/cliente-servicio.entity';
 import * as dotenv from 'dotenv';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { Role } from './common/enums/rol.enum';
+import * as bcrypt from 'bcryptjs';
 
 // Cargar variables de entorno
 dotenv.config();
+
+// Crear usuario administrador por defecto
+const adminUser = {
+  email: 'test@test.cl',
+  password: '123123',
+  name: 'Admin Test',
+  role: Role.ADMIN,
+  isActive: true,
+};
 
 // Configuración manual de DataSource usando las variables del .env
 const AppDataSource = new DataSource({
@@ -39,6 +50,7 @@ async function runSeed() {
 
     const clienteRepository = AppDataSource.getRepository(Cliente);
     const tipoDeServicioRepository = AppDataSource.getRepository(TipoDeServicio);
+    const userRepository = AppDataSource.getRepository(User);
 
     console.log('--- Limpiando datos existentes ---');
       
@@ -50,6 +62,20 @@ async function runSeed() {
     const deleteTiposResult = await tipoDeServicioRepository.delete({});
     console.log(`Tipos de servicio eliminados: ${deleteTiposResult.affected}`);
     
+    console.log('--- Creando Usuario Administrador ---');
+    const existingAdmin = await userRepository.findOne({ where: { email: adminUser.email } });
+    if (!existingAdmin) {
+      const hashedPassword = await bcrypt.hash(adminUser.password, 10);
+      const newAdmin = userRepository.create({
+        ...adminUser,
+        password: hashedPassword,
+      });
+      await userRepository.save(newAdmin);
+      console.log(`Usuario administrador creado: ${newAdmin.email}`);
+    } else {
+      console.log(`Usuario administrador ${adminUser.email} ya existe. No se creó uno nuevo.`);
+    }
+
     console.log('--- Creando nuevos Tipos de Servicio ---');
     for (const tipo of nuevosTiposDeServicio) {
       const tipoData = { 
