@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
     response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
     response.headers.set(
       'Content-Security-Policy',
-      "default-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline';"
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self' https://api.example.com; img-src 'self' data:; style-src 'self' 'unsafe-inline';"
     );
   }
   return response;
