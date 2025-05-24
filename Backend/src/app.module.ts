@@ -30,7 +30,9 @@ import { PaymentsModule } from './payments/payments.module';
       password: String(process.env.POSTGRES_PASSWORD),
       database: process.env.POSTGRES_DB,
       autoLoadEntities: true,
-      synchronize: true,
+      // ⚠️ Deshabilitado en producción - usar migraciones en su lugar
+      synchronize: process.env.NODE_ENV === 'development',
+      logging: process.env.NODE_ENV === 'development',
       ssl: process.env.POSTGRES_SSL === 'true',
       extra: {
         ssl:
@@ -40,6 +42,9 @@ import { PaymentsModule } from './payments/payments.module';
               }
             : null,
       },
+      // Configuración para manejo de conexiones
+      poolSize: 10, // máximo número de conexiones en el pool
+      connectTimeoutMS: 10000, // tiempo de espera para conexiones
     }),
     ClientesModule,
     TiposDeServicioModule,

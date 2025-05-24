@@ -28,10 +28,28 @@ async function bootstrap() {
     }),
   );
 
+  // Configuración CORS más segura
+  const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',');
+  logger.log(`CORS habilitado para: ${allowedOrigins.join(', ')}`);
+  
   app.enableCors({
-    origin: true,
+    origin: (origin, callback) => {
+      // Permitir solicitudes sin origen (como aplicaciones móviles o curl)
+      if (!origin) {
+        return callback(null, true);
+      }
+      
+      if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        return callback(null, true);
+      }
+      
+      logger.warn(`Solicitud CORS bloqueada desde origen: ${origin}`);
+      return callback(new Error('No permitido por CORS'), false);
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    maxAge: 3600,
   });
 
   const config = new DocumentBuilder()

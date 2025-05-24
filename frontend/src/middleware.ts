@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import crypto from 'crypto';
 
 export async function middleware(request: NextRequest) {
   // Ignorar las rutas de API
@@ -28,21 +29,51 @@ export async function middleware(request: NextRequest) {
 
   // Default response
   const response = NextResponse.next();
+  
   // Apply security headers only in production
   if (process.env.NODE_ENV === 'production') {
+    // Generar nonce para scripts y estilos
+    const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+    
     response.headers.set('X-Frame-Options', 'DENY');
     response.headers.set('X-XSS-Protection', '1; mode=block');
     response.headers.set('X-Content-Type-Options', 'nosniff');
     response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
-    response.headers.set(
-      'Content-Security-Policy',
-      "default-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline';"
-    );
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    
+    // CSP configurado para Next.js
+    const cspHeader = `
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval';
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' data: https:;
+      font-src 'self' data:;
+      connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL || ''};
+      frame-ancestors 'none';
+      base-uri 'self';
+      form-action 'self';
+    `.replace(/\s{2,}/g, ' ').trim();
+    
+    response.headers.set('Content-Security-Policy', cspHeader);
+    response.headers.set('X-Nonce', nonce);
   }
+  
   return response;
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/dashboard/:path*',
+    '/login',
+  ],
 };
 
